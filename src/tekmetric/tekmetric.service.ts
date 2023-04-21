@@ -1,202 +1,8 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
-import _ from "lodash";
+import { ForbiddenException, Inject, Injectable, Logger } from "@nestjs/common";
+import _, { StringNullableChain } from "lodash";
+import { HttpService } from "@nestjs/axios";
 import { Pool } from "pg";
-
-const shops = {
-  content: [
-    {
-      id: 5095,
-      environment: "shop.tekmetric.com",
-      name: "Toledo Tire & Auto Care",
-      nickname: "M1",
-      phone: "4194797350",
-      email: "serviceneeded@toledoautocare.com",
-      website: "https://www.toledoautocare.com/",
-      timeZoneId: "America/New_York",
-      address: {
-        id: 27968101,
-        address1: "4544 Monroe Street",
-        address2: "4544 Monroe st",
-        city: "Toledo",
-        state: "OH",
-        zip: "43613",
-        fullAddress: "4544 Monroe Street 4544 Monroe st, Toledo, OH 43613",
-        streetAddress: "4544 Monroe Street 4544 Monroe st",
-      },
-      roCustomLabelEnabled: true,
-    },
-    {
-      id: 5096,
-      environment: "shop.tekmetric.com",
-      name: "Toledo Tire & Auto Care",
-      nickname: "H2",
-      phone: "4198655584",
-      email: "serviceh@toledoautocare.com",
-      website: "https://www.toledoautocare.com/",
-      timeZoneId: "America/New_York",
-      address: {
-        id: 27968134,
-        address1: "5329 Heatherdowns Boulevard",
-        address2: "ToledoAutoCare.com",
-        city: "Toledo",
-        state: "OH",
-        zip: "43614",
-        fullAddress:
-          "5329 Heatherdowns Boulevard ToledoAutoCare.com, Toledo, OH 43614",
-        streetAddress: "5329 Heatherdowns Boulevard ToledoAutoCare.com",
-      },
-      roCustomLabelEnabled: true,
-    },
-    {
-      id: 5097,
-      environment: "shop.tekmetric.com",
-      name: "B&L Tire & Auto Service",
-      nickname: "B3",
-      phone: "4198775330",
-      email: "service@bandlautoservice.com",
-      website: "https://www.toledoautocare.com/b-l-whitehouse/",
-      timeZoneId: "America/New_York",
-      address: {
-        id: 27968153,
-        address1: "10829 Logan Street",
-        address2: "BandLAutoService.com",
-        city: "Whitehouse",
-        state: "OH",
-        zip: "43571",
-        fullAddress:
-          "10829 Logan Street BandLAutoService.com, Whitehouse, OH 43571",
-        streetAddress: "10829 Logan Street BandLAutoService.com",
-      },
-      roCustomLabelEnabled: true,
-    },
-    {
-      id: 5652,
-      environment: "shop.tekmetric.com",
-      name: "HOUSTON TEXAS AUTO CARE",
-      nickname: null,
-      phone: "8328345634",
-      email: "HOUSTONTEXASAUTO@GMAIL.COM",
-      website: null,
-      timeZoneId: "America/Chicago",
-      address: {
-        id: 31536638,
-        address1: "9413 South Main Street",
-        address2: "",
-        city: "Houston",
-        state: "TX",
-        zip: "77025",
-        fullAddress: "9413 South Main Street, Houston, TX 77025",
-        streetAddress: "9413 South Main Street",
-      },
-      roCustomLabelEnabled: true,
-    },
-  ],
-};
-
-const customers = {
-  content: [
-    {
-      id: 31033146,
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: [
-        {
-          id: 34909769,
-          number: "4198707650",
-          type: "Home",
-          primary: true,
-        },
-      ],
-      address: {
-        id: 31081798,
-        address1: "",
-        address2: null,
-        city: "Toledo",
-        state: "OH",
-        zip: "43613",
-      },
-      notes: "",
-      customerType: {
-        id: 2,
-        code: "BUSINESS",
-        name: "Business",
-      },
-      contactFirstName: null,
-      contactLastName: null,
-      shopId: 5095,
-      okForMarketing: true,
-      createdDate: new Date("2023-04-01T00:00:00Z"),
-      updatedDate: null,
-      deletedDate: null,
-      birthday: null,
-    },
-  ],
-};
-
-const jobs = {
-  content: [
-    {
-      id: 307752823,
-      repairOrderId: 93427228,
-      vehicleId: 23883797,
-      customerId: 16391805,
-      name: "New Job",
-      authorized: null,
-      authorizedDate: null,
-      selected: true,
-      technicianId: null,
-      note: null,
-      cannedJobId: null,
-      jobCategoryName: null,
-      partsTotal: 2799998,
-      laborTotal: 0,
-      discountTotal: 0,
-      feeTotal: 0,
-      subtotal: 2799998,
-      archived: false,
-      createdDate: new Date("2023-04-18T20:16:54Z"),
-      completedDate: null,
-      updatedDate: new Date("2023-04-18T20:20:27Z"),
-      labor: [],
-      parts: [
-        {
-          id: 282711778,
-          quantity: 2.0,
-          brand: "",
-          name: "Cabin Air Filter",
-          partNumber: "94211X",
-          description: null,
-          cost: 999999,
-          retail: 1399999,
-          model: null,
-          width: null,
-          ratio: null,
-          diameter: null,
-          constructionType: null,
-          loadIndex: null,
-          speedRating: null,
-          partType: {
-            id: 1,
-            code: "PART",
-            name: "Part",
-          },
-          partStatus: {
-            id: 1,
-            code: "ORDERED",
-            name: "Ordered",
-          },
-          dotNumbers: [],
-        },
-      ],
-      fees: [],
-      discounts: [],
-      laborHours: 0.0,
-      loggedHours: null,
-      sort: null,
-    },
-  ],
-};
+import { map, catchError } from "rxjs/operators";
 
 type TekmetricShop = {
   id: number;
@@ -280,30 +86,106 @@ type TekmetricCustomer = {
   deletedDate: Date | null;
   birthday: Date | null;
 };
+
 @Injectable()
 export class TekmetricService {
   private readonly logger = new Logger(TekmetricService.name);
-
-  constructor(@Inject("DB_CONNECTION") private readonly db: Pool) {}
+  constructor(
+    private httpService: HttpService,
+    @Inject("DB_CONNECTION") private readonly db: Pool,
+  ) {}
 
   async fetchShopData() {
-    await this.writeShopsToDB(shops.content);
-    await this.writeCustomersToDB(customers.content);
-    await this.writeJobsToDB(jobs.content);
+    // await this.writeShopsToDB(shops.content);
+    // await this.writeCustomersToDB(customers.content);
+    await this.getMigraionDate(1);
+    await this.getUpdatedDate(1);
+    await this.getCustomerCount(5095);
+    // await this.writeJobsToDB(jobs.content);
+  }
+
+  async getTekmetricToken() {
+    const client_id = "GRqcvUWGnl8KvA5I";
+    const client_secret = "Mns4FvSQcEW9RdhMCf7fmJtB";
+
+    return this.httpService
+      .post(
+        "https://shop.tekmetric.com/api/v1/oauth/token?grant_type=client_credentials",
+        null,
+        {
+          headers: {
+            Authorization:
+              "Basic " +
+              Buffer.from(client_id + ":" + client_secret).toString("base64"),
+          },
+        },
+      )
+      .pipe(
+        map((res) => {
+          return res;
+        }),
+      )
+      .pipe(
+        catchError(() => {
+          throw new ForbiddenException("API not available");
+        }),
+      );
+  }
+
+  async getTekmetricShops() {
+    return this.httpService
+      .get("https://sandbox.tekmetric.com/api/v1/shops", {
+        headers: {
+          Authorization: "Bearer " + "f4819111-c7d9-481c-a5c0-4b57f9fd9310",
+        },
+      })
+      .pipe(
+        map((res) => {
+          return res;
+        }),
+      )
+      .pipe(
+        catchError(() => {
+          throw new ForbiddenException("API not available");
+        }),
+      );
+  }
+
+  async getCustomersPerShop(shop_id: number) {
+    return this.httpService
+      .get(`https://shop.tekmetric.com/api/v1/customers?shop=${shop_id}`, {
+        headers: {
+          Authorization: "Bearer " + "f4819111-c7d9-481c-a5c0-4b57f9fd9310",
+        },
+      })
+      .pipe(
+        map((res) => {
+          return res;
+        }),
+      )
+      .pipe(
+        catchError(() => {
+          throw new ForbiddenException("API not available");
+        }),
+      );
   }
 
   async writeShopsToDB(tekmetricShops: TekmetricShop[]) {
     console.log("start");
     const shops = tekmetricShops.reduce(
       (result, shop) => ({
-        ids: [...result.ids, shop.id],
+        tek_ids: [...result.tek_ids, shop.id],
         names: [...result.names, shop.name],
         phones: [...result.phones, shop.phone],
+        emails: [...result.emails, shop.email],
+        websites: [...result.websites, shop.website],
       }),
       {
-        ids: [] as number[],
+        tek_ids: [] as number[],
         names: [] as (string | null)[],
         phones: [] as (string | null)[],
+        emails: [] as (string | null)[],
+        websites: [] as (string | null)[],
       },
     );
     await this.db.query(
@@ -311,19 +193,83 @@ export class TekmetricService {
       INSERT INTO shop (
         tekmetric_shop_id,
         name,
-        phone
+        phone,
+        email,
+        website
       )
       SELECT * FROM UNNEST (
         $1::int[],
         $2::text[],
-        $3::text[]
+        $3::text[],
+        $4::text[],
+        $5::text[]
       )
       ON CONFLICT (tekmetric_shop_id)
       DO UPDATE
       SET
         name = EXCLUDED.name,
-        phone = EXCLUDED.phone`,
-      [shops.ids, shops.names, shops.phones],
+        phone = EXCLUDED.phone,
+        email = EXCLUDED.phone,
+        website = EXCLUDED.website`,
+      [shops.tek_ids, shops.names, shops.phones, shops.emails, shops.websites],
+    );
+  }
+
+  async writeCustomersToDB(tekmetriccustomers: TekmetricCustomer[]) {
+    console.log("start customer");
+    const customers = tekmetriccustomers.reduce(
+      (result, customer) => ({
+        ids: [...result.ids, customer.id],
+        shop_id: [...result.shop_id, customer.shopId],
+        createdDates: [...result.createdDates, customer.createdDate],
+        updatedDates: [...result.updatedDates, customer.updatedDate],
+        customerTypes: [...result.customerTypes, customer.customerType.code],
+        okForMarketings: [...result.okForMarketings, customer.okForMarketing],
+      }),
+      {
+        ids: [] as number[],
+        shop_id: [] as number[],
+        createdDates: [] as (Date | null)[],
+        updatedDates: [] as (Date | null)[],
+        customerTypes: [] as (string | null)[],
+        okForMarketings: [] as (boolean | null)[],
+      },
+    );
+    await this.db.query(
+      `
+      INSERT INTO customer (
+        id,
+        tekmetric_shop_id,
+        createdDate,
+        updatedDate,
+        customer_type,
+        okformarketing
+      )
+      SELECT * FROM UNNEST (
+        $1::int[],
+        $2::int[],
+        $3::date[],
+        $4::date[],
+        $5::text[],
+        $6::boolean[]
+      )
+      ON CONFLICT (id)
+      DO UPDATE
+      SET
+      id = EXCLUDED.id,
+      tekmetric_shop_id = EXCLUDED.tekmetric_shop_id,
+      createddate = EXCLUDED.createddate,
+      updateddate = EXCLUDED.updateddate,
+      customer_type = EXCLUDED.customer_type,
+      okformarketing = EXCLUDED.okformarketing`,
+      [
+        customers.ids,
+        customers.shop_id,
+        customers.createdDates,
+        customers.updatedDates,
+        customers.customerTypes,
+        customers.okForMarketings,
+      ],
     );
   }
 
@@ -367,34 +313,44 @@ export class TekmetricService {
     );
   }
 
-  async writeCustomersToDB(tekmetriccustomers: TekmetricCustomer[]) {
-    console.log("start customer");
-    const customers = tekmetriccustomers.reduce(
-      (result, customer) => ({
-        ids: [...result.ids, customer.id],
-        shop_id: [...result.shop_id, customer.shopId],
-      }),
-      {
-        ids: [] as number[],
-        shop_id: [] as number[],
-      },
-    );
-    await this.db.query(
+  async getMigraionDate(shopId: Number) {
+    const response = await this.db.query(
       `
-      INSERT INTO customer (
-        tekmetric_customer_id,
-        shop_id,
-      )
-      SELECT * FROM UNNEST (
-        $1::int[],
-        $2::int[]
-      )
-      ON CONFLICT (tekmetric_customer_id)
-      DO UPDATE
-      SET
-      shop_id = EXCLUDED.shop_id
-        `,
-      [customers.ids, customers.shop_id],
+      select c.tekmetric_shop_id, date(c.createdDate) as migrationDate, count(date(c.createdDate)) as count
+      from customer c 
+      where c.tekmetric_shop_id = ${shopId}
+      group by c.tekmetric_shop_id, migrationDate
+      order by count DESC LIMIT 1
+
+      `,
     );
+    console.log(response);
+    return response;
+  }
+
+  async getUpdatedDate(shopId: Number) {
+    const response = await this.db.query(
+      `
+      select max(date(c.updatedDate)) as updatedDate from customer c 
+      where c.tekmetric_shop_id = ${shopId}
+      `,
+    );
+    console.log(response);
+    return response;
+  }
+
+  async getCustomerCount(shopId: Number) {
+    const response = await this.db.query(
+      `
+      select count(distinct c.id) as customerCount
+      from customer c
+      where
+        c.tekmetric_shop_id =  ${shopId}
+        and c.customer_type = 'PERSON'
+        and c.okForMarketing = true
+      `,
+    );
+    console.log(response);
+    return response;
   }
 }
