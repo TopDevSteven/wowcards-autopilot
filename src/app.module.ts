@@ -8,6 +8,10 @@ import { AppService } from "./app.service";
 import { TekmetricModule } from "./tekmetric/tekmetric.module";
 import { DbModule } from "./db/db.module";
 import { JobsModule } from "./jobs/jobs.module";
+import { ShopwareModule } from "./shopware/shopware.module";
+import { ProtractorModule } from "./protractor/protractor.module";
+import { GooglesheetService } from './googlesheet/googlesheet.service';
+import { GooglesheetModule } from './googlesheet/googlesheet.module';
 
 @Module({
   imports: [
@@ -27,6 +31,9 @@ import { JobsModule } from "./jobs/jobs.module";
         },
       }),
     }),
+    ShopwareModule,
+    ProtractorModule,
+    GooglesheetModule,
   ],
   controllers: [AppController],
   providers: [
@@ -36,6 +43,7 @@ import { JobsModule } from "./jobs/jobs.module";
       useFactory: () => null,
     },
     AppService,
+    GooglesheetService,
   ],
 })
 export class AppModule {}
