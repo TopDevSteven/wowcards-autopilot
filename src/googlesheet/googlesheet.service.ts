@@ -5,6 +5,8 @@ import { TekmetricShopService } from '../tekmetric/tekmetric.shop.service';
 import { TekmetricApiService } from '../tekmetric/api.service';
 import { TekmetricShop } from '../tekmetric/api.service';
 import { TekmetricService } from '../tekmetric/tekmetric.service';
+import { ProtractorService } from '../protractor/protractor.service';
+
 
 @Injectable()
 export class GooglesheetService {
@@ -14,6 +16,7 @@ export class GooglesheetService {
         private readonly tekmetricShopService: TekmetricShopService,
         private readonly tekmetricApiService: TekmetricApiService,
         private readonly tekmetricService: TekmetricService,
+        private readonly protractorService: ProtractorService,
     ) {
         const client = new JWT({
             email: "wowcards@wowcardsproject.iam.gserviceaccount.com",
@@ -27,7 +30,7 @@ export class GooglesheetService {
     async clear(spreadsheetId: string): Promise<void> {
         await this.sheets.spreadsheets.values.clear({
             spreadsheetId,
-            range: `Sheet1!A2:B`,
+            range: `Sheet1!A2:R`,
         });
     }
 
@@ -53,14 +56,34 @@ export class GooglesheetService {
         });
     }
 
-    async update_tekmetric(){
-        const spreadsheetId = '1CthMJiT7ofZel4VANFlgujAlydDc8oAcpdCQ4aUO0qA';
-        const values = await this.prepare_tek_connedted_shop();
-        const finalRowIndex = 2 + values.length;
-        const range = `Sheet1!A2:R${finalRowIndex}`;
-        
+    async update_report_google_sheet(){
+        const spreadsheetId = '169D79qo-4pMiHb56ZpuDe2GUe7vyC_Vz7lRv4XD73iA';
+        const tekmetric_values = await this.prepare_tek_connedted_shop();
+        const protractor_values = await this.prepare_pro_connected_shop();
+        const values = tekmetric_values.concat(protractor_values)
+        const finalRowIndex = 2 + values.length
+        const range = `Sheet1!A2:T${finalRowIndex}`
+
         await this.clear(spreadsheetId)
-        await this.update(spreadsheetId, range, values);
+        await this.update(spreadsheetId, range, values)
+        // const rangeBefore = `Sheet1!A2:C${finalRowIndex}`
+        // const rangeAfter = `Sheet1!F2:S${finalRowIndex}`
+        // const valuesBefore = values.map(item => item.slice(0,3))
+        // const valuesAfter = values.map(item => item.slice(5))
+         
+        // await this.update(spreadsheetId, rangeBefore, valuesBefore)
+        // await this.update(spreadsheetId, rangeAfter, valuesAfter)        
+
+        // const values = await this.prepare_pro_connected_shop();
+        // const finalRowIndex = 66 + values.length
+        // const rangeBefore = `Sheet1!A66:C${finalRowIndex}`
+        // const rangeAfter = `Sheet1!F66:S${finalRowIndex}`
+        // const valuesBefore = values.map(item => item.slice(0,3))
+        // const valuesAfter = values.map(item => item.slice(5))
+        
+        // await this.update(spreadsheetId, rangeBefore, valuesBefore)
+        // await this.update(spreadsheetId, rangeAfter, valuesAfter)
+        
     }
 
     async prepare_tek_connedted_shop() {
@@ -97,16 +120,18 @@ export class GooglesheetService {
         const SortedCustomersData = Customers.sort((a,b) => a.shopid - b.shopid)
         const DataForSheet = SortedShopsData.map((item, index) =>
             [item.name, 
+            "Tekmetric",
+            item.id,
             "Connected", 
             new Date().toISOString().split("T")[0],
+            "",
+            "",
             item.website,
             item.phone,
             SortedOwnerData[index].firstname,
             SortedOwnerData[index].lastname,
             SortedOwnerData[index].email,
             SortedCustomersData[index].customercount,
-            "Tekmetric",
-            item.id,
             LastVisists04[index].jobswithauthorizeddatecount,
             LastVisists01[index].jobswithauthorizeddatecount,
             LastVisists12[index].jobswithauthorizeddatecount,
@@ -115,12 +140,74 @@ export class GooglesheetService {
             FirstVisit[index].firstvisitdate,
             MigrationDate[index].migrationdate
             ]
-        )
+        );
 
         return DataForSheet;
     }
 
     async prepare_pro_connected_shop(){
-        
+        const ShopList = [
+            "Sours VA",
+            "AG Automotive - OR",
+            "Highline – AZ",
+            "Toledo Autocare - B&L Whitehouse - OH",
+            "Toledo Autocare - Monroe Street - OH",
+            "Toledo Autocare - HEATHERDOWNS - OH",
+            "Wayside Garage – CA"
+        ]
+
+        const ShopsDate = await Promise.all(
+            ShopList.map(item => this.protractorService.getCustomers(item))
+        )
+        const LastVisists04 = await Promise.all(
+            ShopList.map(item => this.protractorService.getLastVisits(item, 4, 0))
+        )
+        const LastVisists01 = await Promise.all(
+            ShopList.map(item => this.protractorService.getLastVisits(item, 1, 0))
+        )
+        const LastVisists12 = await Promise.all(
+            ShopList.map(item => this.protractorService.getLastVisits(item, 2, 1))
+        )
+        const LastVisists23 = await Promise.all(
+            ShopList.map(item => this.protractorService.getLastVisits(item, 3, 2))
+        )
+        const LastVisists34 = await Promise.all(
+            ShopList.map(item => this.protractorService.getLastVisits(item, 4, 3))
+        )
+        const DataForSheet = ShopList.map((item, index) =>
+            [
+                item,
+                "Protractor",
+                "",
+                "Connected",
+                new Date().toISOString().split("T")[0],
+                "","","","","","","",
+                ShopsDate[index].customers,
+                LastVisists04[index].lastvisits,
+                LastVisists01[index].lastvisits,
+                LastVisists12[index].lastvisits,
+                LastVisists23[index].lastvisits,
+                LastVisists34[index].lastvisits,
+                "",
+                ""
+            ]
+        )
+
+        return DataForSheet;
     }
+
+    // async get_status_shopname(){
+    //     const spreadsheetId = '1CthMJiT7ofZel4VANFlgujAlydDc8oAcpdCQ4aUO0qA';
+    //     const shopNameRange = [`Sheet1!A:A`, `Sheet1!B:B`];
+    //     const shopName = await this.sheets.spreadsheets.values.batchGet({
+    //         spreadsheetId: spreadsheetId,
+    //         ranges: shopNameRange
+    //     })
+    //     const ShopNames = shopName.data.valueRanges&&shopName.data.valueRanges[0].values?.flat().slice(1)
+    //     const ShopStatus = shopName.data.valueRanges&&shopName.data.valueRanges[1].values?.flat().slice(1)
+    //     return {
+    //         "name": ShopNames,
+    //         "status": ShopStatus
+    //     }
+    // }
 }

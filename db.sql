@@ -65,7 +65,8 @@ create table tekshop (
     name varchar(50),
 	phone varchar(50),
 	email varchar(50),
-	website varchar(50)
+	website varchar(50),
+	status varchar(50)
 )
 
 create table tekemployee (
@@ -97,6 +98,7 @@ create table protractorcontact(
 	firstname varchar(50),
 	middlename varchar(50),
 	lastname varchar(50),
+	shopname varchar(50),
 	suffix varchar(50),
 	addresstitle varchar(50),
 	addressstreet varchar(150),

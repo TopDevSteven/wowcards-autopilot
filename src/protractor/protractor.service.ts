@@ -31,11 +31,12 @@ export class ProtractorService {
       start_date,
       end_date,
     );
-    console.log(response.CRMDataSet);
+    console.log(response)
+    console.log(response.CRMDataSet.ServiceItems.Item);
     await this.protractorcontactservice.writeProtractorContactsToDB(
       response.CRMDataSet.Contacts.Item
         ? response.CRMDataSet.Contacts.Item
-        : null,
+        : null, "Wayside Garage – CA"
     );
     await this.protractorinvoiceservice.writeProtractorInvoiesToDB(
       response.CRMDataSet.Invoices.Item
@@ -62,7 +63,7 @@ export class ProtractorService {
       c.firstname as firstname, 
       c.middlename as middlename, 
       c.lastname as lastname,
-      'Sours VA' as shopname,
+      c.shopname as shopname,
       c.suffix as suffix,
       c.addresstitle as addresstitle, 
       c.addressstreet as addressstreet, 
@@ -95,9 +96,43 @@ export class ProtractorService {
     return response.rows;
   }
 
+  async getCustomers(shop_name: string) {
+    const response = await this.db.query(
+      `
+      SELECT COUNT(DISTINCT c.id) as customers,
+      '${shop_name}' as shopname
+      FROM protractorcontact c
+      WHERE c.shopname = '${shop_name}'
+      `
+    )
+
+    return response.rows[0]
+  }
+
+  async getLastVisits(shop_name: string, start_year: number, last_year: number) {
+    const response = await this.db.query(
+      `
+      SELECT
+        COUNT(DISTINCT c.id) as lastvisits,
+        '${shop_name}' as shopname
+      FROM protractorcontact as c
+      LEFT JOIN(
+        SELECT contactid, MAX(invoicetime) as maxinvoicetime
+        FROM protractorinvoice
+        GROUP BY contactid
+      ) as i ON c.id = i.contactid
+      WHERE DATE(maxinvoicetime) >= DATE(NOW() - INTERVAL '${start_year} YEARS')
+      AND DATE(maxinvoicetime) < DATE(NOW() - INTERVAL '${last_year} YEARS')
+      AND c.shopname = '${shop_name}'
+      `
+    )
+
+    return response.rows[0]
+  }
+
   async generativeDateGroup() {
     const today = new Date();
-    let startDate = new Date("2020-01-01");
+    let startDate = new Date("2022-01-01");
     let endDate = new Date();
     let numofDays = 180;
     let DateGroups = new Array();

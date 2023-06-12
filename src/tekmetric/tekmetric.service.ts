@@ -6,7 +6,9 @@ import {
 } from "@nestjs/common";
 import { Pool } from "pg";
 import { ConfigService } from "@nestjs/config";
+import { ModuleRef } from "@nestjs/core";
 import { TekmetricApiService } from "./api.service";
+import { TekmetricDeduplicate } from "./tekmetric.deduplicate.service";
 const csvWriter = require("csv-writer");
 import path from "path";
 
@@ -31,6 +33,7 @@ const shopIds = ["888"];
 export class TekmetricService {
   private readonly logger = new Logger(TekmetricService.name);
   constructor(
+    private readonly moduleref: ModuleRef,
     private configService: ConfigService,
     private readonly apiService: TekmetricApiService,
     @Inject("DB_CONNECTION") private readonly db: Pool,
@@ -54,10 +57,10 @@ export class TekmetricService {
   async getFirstVisitDate(shopId: Number) {
     const response = await this.db.query(
       `
-      SELECT to_char(MIN(j.authorizedDate), 'YYYY-MM-DD') as firstvisitdate, 
+      SELECT to_char(MIN(j.authorizedDate), 'YYYY-MM-DD') as firstvisitdate,
         ${shopId} as shopid
-      FROM tekjob as j 
-      LEFT JOIN tekcustomer c ON j.customerid = c.id 
+      FROM tekjob as j
+      LEFT JOIN tekcustomer c ON j.customerid = c.id
       WHERE c.shopID = ${shopId}
       `
     )
@@ -160,32 +163,32 @@ export class TekmetricService {
     return response.rows[0];
   }
 
-  // async getTekmetricEachShopDashboard(shopId: number) {
-  //   const jobAuthDateCount = await this.getJobsWithAuthorizedDateCount(shopId);
-  //   const shopinfo = await this.getShops(shopId);
-  //   const customerCount = await this.getCustomerCount(shopId);
-  //   const updatedDate = await this.getUpdatedDate(shopId);
-  //   const migrationDate = await this.getMigraionDate(shopId);
+  async getTekmetricEachShopDashboard(shopId: number) {
+    const jobAuthDateCount = await this.getJobsWithAuthorizedDateCount(shopId, 4, 0);
+    const shopinfo = await this.getShops(shopId);
+    const customerCount = await this.getCustomerCount(shopId);
+    const updatedDate = await this.getUpdatedDate(shopId);
+    const migrationDate = await this.getMigraionDate(shopId);
 
-  //   return {
-  //     jobauthorizedDate: jobAuthDateCount[0].jobswithauthorizeddatecount,
-  //     shopId: migrationDate[0].shopid,
-  //     shopname: shopinfo[0].name,
-  //     shopemail: shopinfo[0].email,
-  //     shopwebsite: shopinfo[0].website,
-  //     shopphone: shopinfo[0].phone,
-  //     migraionDate: migrationDate[0].migrationdate,
-  //     updatedDate: updatedDate[0].updateddate,
-  //     customerCount: customerCount[0].customercount,
-  //   };
-  // }
+    return {
+      jobauthorizedDate: jobAuthDateCount[0].jobswithauthorizeddatecount,
+      shopId: migrationDate[0].shopid,
+      shopname: shopinfo[0].name,
+      shopemail: shopinfo[0].email,
+      shopwebsite: shopinfo[0].website,
+      shopphone: shopinfo[0].phone,
+      migraionDate: migrationDate[0].migrationdate,
+      updatedDate: updatedDate[0].updateddate,
+      customerCount: customerCount[0].customercount,
+    };
+  }
 
-  // async getTekmetricShopDashboard() {
-  //   const res = await Promise.all(
-  //     shopIds.map((id) => this.getTekmetricEachShopDashboard(Number(id))),
-  //   );
-  //   return res;
-  // }
+  async getTekmetricShopDashboard() {
+    const res = await Promise.all(
+      shopIds.map((id) => this.getTekmetricEachShopDashboard(Number(id))),
+    );
+    return res;
+  }
 
   async getTeckmetricReport() {
     const response = await this.db.query(
@@ -262,8 +265,6 @@ export class TekmetricService {
     return response.rows;
   }
 
-  // generating the CSV dashboards
-
   async generateReportCSVFile() {
     const report = await this.getTeckmetricReport();
 
@@ -309,25 +310,84 @@ export class TekmetricService {
     });
   }
 
-  // async generateDashboardCSVFile() {
-  //   const dashboard = await this.getTekmetricShopDashboard();
-  //   const writer = csvWriter.createObjectCsvWriter({
-  //     path: path.resolve(__dirname, "dashboard.csv"),
-  //     header: [
-  //       { id: "jobauthorizedDate", title: "jobs.authorizedDate" },
-  //       { id: "shopId", title: "shopId" },
-  //       { id: "migraionDate", title: "migrationDate" },
-  //       { id: "shopname", title: "shopName" },
-  //       { id: "shopphone", title: "phone" },
-  //       { id: "shopemail", title: "email" },
-  //       { id: "shopwebsite", title: "website" },
-  //       { id: "customerCount", title: "customerCount" },
-  //       { id: "updatedDate", title: "updatedDate" },
-  //     ],
-  //   });
+  async generateDashboardCSVFile() {
+    const dashboard = await this.getTekmetricShopDashboard();
+    const writer = csvWriter.createObjectCsvWriter({
+      path: path.resolve(__dirname, "dashboard.csv"),
+      header: [
+        { id: "jobauthorizedDate", title: "jobs.authorizedDate" },
+        { id: "shopId", title: "shopId" },
+        { id: "migraionDate", title: "migrationDate" },
+        { id: "shopname", title: "shopName" },
+        { id: "shopphone", title: "phone" },
+        { id: "shopemail", title: "email" },
+        { id: "shopwebsite", title: "website" },
+        { id: "customerCount", title: "customerCount" },
+        { id: "updatedDate", title: "updatedDate" },
+      ],
+    });
 
-  //   await writer.writeRecords(dashboard).then(() => {
-  //     console.log("Done!");
-  //   });
-  // }
+    await writer.writeRecords(dashboard).then(() => {
+      console.log("Done!");
+    });
+  }
+
+  async generateDepReportBasedSI(shop_id: number) {
+    const deDuplicateService = this.moduleref.get(TekmetricDeduplicate)
+    const customers = await deDuplicateService.addDupFlagBasedSI(shop_id)
+    const writer = csvWriter.createObjectCsvWriter(
+      {
+        path: path.resolve(__dirname, "deduplicateReport(SI).csv"),
+        header: [
+          {id: 'old_firstname', title: "First Name"},
+          {id: 'old_lastname', title: "Last Name"},
+          {id: 'new_firstname', title: "New First Name"},
+          {id: 'new_lastname', title: "New Last Name"},
+          {id: 'namecode', title: "NameCode"},
+          {id: 'isDuplicate', title: "Duplicate Flag"},
+          {id: 'address1', title: "Address1"},
+          {id: 'address2', title: "Address2"},
+          {id: 'shop_id', title: "Shop Id"},
+          {id: 'str_date', title: "Authorized Date"},
+        ]
+      }
+    )
+
+    await writer.writeRecords(customers).then(() => {
+      console.log("Done!")
+    })
+  }
+
+  async generateDepReportBasedCI() {
+    const deDuplicateService = this.moduleref.get(TekmetricDeduplicate)
+    const customers = await deDuplicateService.addDupFlagBasedCI()
+    const writer = csvWriter.createObjectCsvWriter(
+      {
+        path: path.resolve(__dirname, "deduplicateReport(CI).csv"),
+        header: [
+          {id: 'old_firstname', title: "First Name"},
+          {id: 'old_lastname', title: "Last Name"},
+          {id: 'new_firstname', title: "New First Name"},
+          {id: 'new_lastname', title: "New Last Name"},
+          {id: 'namecode', title: "NameCode"},
+          {id: 'isDuplicate', title: "Duplicate Flag"},
+          {id: 'address1', title: "Address1"},
+          {id: 'address2', title: "Address2"},
+          {id: 'address_city', title: "Address City"},
+          {id: 'address_state', title: "Address State"},
+          {id: 'address_zip', title: "Address Zip"},
+          {id: 'shop_id', title: "Shop Id"},
+          {id: 'str_date', title: "Authorized Date"},
+          {id: 'owner_firstname', title: 'Owner FirstName'},
+          {id: 'owner_secondname', title: 'Owner SecondName'},
+          {id: 'owner_email', title: 'Owner Email'},
+        ]
+      }
+    )
+
+    await writer.writeRecords(customers).then(() => {
+      console.log("Done!")
+    })
+  }
+
 }

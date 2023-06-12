@@ -5,6 +5,7 @@ import { ShopwareModule } from "../shopware/shopware.module";
 import { ProtractorModule } from "../protractor/protractor.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { GooglesheetModule } from "../googlesheet/googlesheet.module";
+import { AccuzipModule } from "../accuzip/accuzip.module";
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import { GooglesheetModule } from "../googlesheet/googlesheet.module";
     ShopwareModule,
     ProtractorModule,
     ScheduleModule.forRoot(),
-    GooglesheetModule
+    GooglesheetModule,
+    AccuzipModule
   ],
   providers: [JobsService],
 })

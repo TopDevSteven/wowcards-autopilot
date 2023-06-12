@@ -51,7 +51,7 @@ type ProtractorContact = {
 export class ProtractorContactService {
   constructor(@Inject("DB_CONNECTION") private readonly db: Pool) {}
 
-  async writeProtractorContactsToDB(protractorContact: ProtractorContact[]) {
+  async writeProtractorContactsToDB(protractorContact: ProtractorContact[], shopname: string) {
     const contacts = protractorContact.reduce(
       (result, contact) => ({
         ids: [...result.ids, contact.ID],
@@ -67,6 +67,7 @@ export class ProtractorContactService {
         firstNames: [...result.firstNames, contact.Name.FirstName],
         middleNames: [...result.middleNames, contact.Name.MiddleName],
         lastNames: [...result.lastNames, contact.Name.LastName],
+        shopnames: [...result.shopnames, shopname],
         suffixes: [...result.suffixes, contact.Name.Suffix],
         addresstitles: [...result.addresstitles, contact.Address.Title],
         addressstreets: [...result.addressstreets, contact.Address.Street],
@@ -104,6 +105,7 @@ export class ProtractorContactService {
         firstNames: [] as (string | null)[],
         middleNames: [] as (string | null)[],
         lastNames: [] as (string | null)[],
+        shopnames: [] as (string | null) [],
         suffixes: [] as (string | null)[],
         addresstitles: [] as (string | null)[],
         addressstreets: [] as (string | null)[],
@@ -138,6 +140,7 @@ export class ProtractorContactService {
               firstname,
               middlename,
               lastname,
+              shopname,
               suffix,
               addresstitle,
               addressstreet,
@@ -183,11 +186,12 @@ export class ProtractorContactService {
               $22::varchar(50)[],
               $23::varchar(50)[],
               $24::varchar(50)[],
-              $25::varchar(150)[],
+              $25::varchar(50)[],
               $26::varchar(150)[],
-              $27::boolean[],
+              $27::varchar(150)[],
               $28::boolean[],
-              $29::boolean[]
+              $29::boolean[],
+              $30::boolean[]
             )
             ON CONFLICT (id)
             DO UPDATE
@@ -202,6 +206,7 @@ export class ProtractorContactService {
             firstname = EXCLUDED.firstname,
             middlename = EXCLUDED.middlename,
             lastname = EXCLUDED.lastname,
+            shopname = EXCLUDED.shopname,
             suffix = EXCLUDED.suffix,
             addresstitle = EXCLUDED.addresstitle,
             addressstreet = EXCLUDED.addressstreet,
@@ -231,6 +236,7 @@ export class ProtractorContactService {
         contacts.firstNames,
         contacts.middleNames,
         contacts.lastNames,
+        contacts.shopnames,
         contacts.suffixes,
         contacts.addresstitles,
         contacts.addressstreets,

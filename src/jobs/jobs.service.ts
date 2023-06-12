@@ -7,9 +7,11 @@ import { TekmetricJobService } from "../tekmetric/tekmetric.job.service";
 import { TekmetricRepairOrderService } from "../tekmetric/tekmertric.repairorder.service";
 import { TekmetricShopService } from "../tekmetric/tekmetric.shop.service";
 import { TekmetricEmployeeService } from "../tekmetric/tekmetric.employee.service";
+import { TekmetricDeduplicate } from "../tekmetric/tekmetric.deduplicate.service";
 import { ShopwareService } from "../shopware/shopware.service";
 import { ProtractorService } from "../protractor/protractor.service";
 import { GooglesheetService } from "../googlesheet/googlesheet.service";
+import { AccuzipApiService } from "../accuzip/api.service";
 
 const shopIds = [
   // '1',
@@ -95,47 +97,32 @@ export class JobsService {
     private readonly tekmetricShopService: TekmetricShopService,
     private readonly tekmetricEmployeeService: TekmetricEmployeeService,
     private readonly googlesheetService: GooglesheetService,
+    private readonly tekmetricDeduplicate: TekmetricDeduplicate,
+    private readonly accuzipApiService: AccuzipApiService,
   ) {
     this.runSyncJob = this.runSyncJob.bind(this);
     this.logException = this.logException.bind(this);
   }
 
-  async run(shopid: number) {
-    // await this.tekmetricJobService.fetchAndWriteJobData(shopid);
-    // await this.tekmetricRepairOrtherService.fetchAndWriteRepairOrderData(shopid);
-    // await this.tekmetricCustomerService.fetchAndWriteCustomerData(shopid);
-    // await this.tekmetricEmployeeService.fetchAndWriteEmployee(shopid)
-    await this.tekmetricJobService.fetchAndWriteJobData(shopid)
-    // await this.count()
-  }
-
-  async count() {
-    console.log("successful!!!");
-  }
-
-  async failed(shopid: number) {
-    console.log(`${shopid}: falled`);
-  }
-
   @Cron(new Date(Date.now() + 1 * 1000))
-  // @Cron('0 6-8,21-23 * * *',{
+  //Runing hourly
+  // @Cron('0 8-21 * * *',{
   //   timeZone: 'America/New_York',  // specifying Eastern Time Zone
   // })
   TEKMETRICtestJob() {
     return this.runSyncJob("Test Job", async () => {
       this.logger.log(`TEKMETRICTest job is executing...`);
 
-      // await this.googlesheetService.update_tekmetric()
-      // await this.googlesheetService.prepare_tek_data()
+      const res = await this.accuzipApiService.ncoaApi()
 
-      // await Promise.all(shopIds.map(shopid => this.tekmetricJobService.fetchAndWriteJobData(Number(shopid))))
-      // await Promise.all(shopIds.map(shopid => this.tekmetricEmployeeService.fetchAndWriteEmployee(Number(shopid))))
-      // await Promise.all(shopIds.map(shopid => this.tekmetricCustomerService.fetchAndWriteCustomerData(Number(shopid))))
-      // await Promise.all(shopIds.map(shopid => this.tekmetricRepairOrtherService.fetchAndWriteRepairOrderData(Number(shopid))))
+      console.log(res)
     });
   }
 
   // @Cron(new Date(Date.now() + 5 * 1000))
+  // @Cron('0 0-8,21-23 * * *',{
+  //   timeZone: 'America/New_York',  // specifying Eastern Time Zone
+  // })
   // ShopwaretestJob() {
   //   return this.runSyncJob("Test Job", async () => {
   //     this.logger.log(`ProtractorTest job is executing...`);

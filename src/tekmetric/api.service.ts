@@ -86,7 +86,6 @@ export class TekmetricApiService {
     );
 
     const tokenResponse: TekmetricAuthResponse = await res.json();
-
     const createdAt = new Date();
 
     this.apiToken = {

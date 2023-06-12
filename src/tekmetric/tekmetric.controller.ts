@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req } from "@nestjs/common";
+import { Controller, Get, Post, Query, Req } from "@nestjs/common";
 import { wrapResponse } from "../app.controller";
 import { TekmetricService } from "./tekmetric.service";
 
@@ -7,12 +7,7 @@ export class TekmetricController {
   constructor(private readonly tekmetricService: TekmetricService) {}
 
   @Get("/getTekReport")
-  getTekReport() {
-    return null;
-  }
-
-  @Get("/getTekdata")
-  async getTekdate() {
-    return null;
+  async getTekReport() {
+    return "hello";
   }
 }
