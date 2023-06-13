@@ -6,8 +6,8 @@ export class CallbackController {
     ){}
 
     @Get()
-    handleCallback(@Query('guid') guid:string){
-        console.log(guid)
+    handleCallback(){
+        console.log("Go there!!!")
         return {message: 'Callback received successfully'};
     }
 }
