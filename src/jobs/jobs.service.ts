@@ -113,9 +113,10 @@ export class JobsService {
     return this.runSyncJob("Test Job", async () => {
       this.logger.log(`TEKMETRICTest job is executing...`);
 
-      const res = await this.accuzipApiService.ncoaApi()
+      const owners = await this.tekmetricDeduplicate.fetchChainShops()
 
-      console.log(res)
+      console.log(owners)
+
     });
   }
 

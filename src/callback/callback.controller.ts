@@ -7,7 +7,7 @@ export class CallbackController {
     constructor(
     ){}
 
-    @Post()
+    @Get(":guid")
     handleCallback(@Body() data: any): Promise<any> {
         return new Promise((resolve, reject) => {
             try {

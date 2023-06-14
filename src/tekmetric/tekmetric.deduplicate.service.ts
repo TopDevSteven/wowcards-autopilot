@@ -3,6 +3,39 @@ import { Pool } from "pg";
 import { TekmetricService } from "./tekmetric.service";
 import { TekmetricCustomerService } from "./tekmetric.customer.service";
 
+const activeShopList = [
+398,
+1159,
+1552,
+3028,
+3586,
+3229,
+3472,
+293,
+1216,
+4494,
+888,
+309,
+2442,
+3543,
+3547,
+3758,
+3540,
+3539,
+3761,
+1873,
+3542,
+3541,
+3759,
+331,
+1692,
+2305,
+3520,
+1398,
+3351,
+3385,
+4120
+]
 
 type  CustomerObject = {
     firstname: string;
@@ -247,9 +280,13 @@ export class TekmetricDeduplicate {
 
 
   async fetchChainShops(){
-    const shopIds = await this.db.query(`SELECT id FROM tekshop`)
+    // const shopIds = await this.db.query(`SELECT id FROM tekshop`)
+    // const shopOwners = await Promise.all(
+    //     shopIds.rows.map(shop_id => this.tekmetricService.getOwners(shop_id.id))
+    // )
+    // In terms of activae Shop List
     const shopOwners = await Promise.all(
-        shopIds.rows.map(shop_id => this.tekmetricService.getOwners(shop_id.id))
+        activeShopList.map(id => this.tekmetricService.getOwners(id))
     )
     let map = new Map<string, ChainObject[]>()
     for (let item of shopOwners.flat()) {
