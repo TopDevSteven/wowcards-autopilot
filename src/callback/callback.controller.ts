@@ -14,16 +14,16 @@ import { resolve } from "path";
 export class CallbackController {
   constructor() {}
 
-  @Get(":guid")
-  handleCallback(@Body() data: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      try {
-        console.log(data);
+  @Get()
+  handleCallback(@Query('guid') guid: string): string {
+    try {
+      console.log('GUID:', guid);
+      // Perform further processing or trigger other actions based on the provided GUID
+      // ...
 
-        resolve({ status: "ok" });
-      } catch (error) {
-        reject({ status: "Error", message: "Error processing callback" });
-      }
-    });
+      return 'Callback received successfully';
+    } catch (error) {
+      throw new HttpException('Error processing callback', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
