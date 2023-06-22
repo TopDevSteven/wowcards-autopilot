@@ -9,9 +9,41 @@ import { TekmetricShopService } from "../tekmetric/tekmetric.shop.service";
 import { TekmetricEmployeeService } from "../tekmetric/tekmetric.employee.service";
 import { TekmetricDeduplicate } from "../tekmetric/tekmetric.deduplicate.service";
 import { ShopwareService } from "../shopware/shopware.service";
+import { ShopwareCustomerService } from "../shopware/shopware.customer.service";
+import { ShopwareRepairOrderService } from "../shopware/shopware.repairorders.service";
+import { ShopwareShopService } from "../shopware/shopware.shop.service";
+import { ShopWareDeduplicate } from "../shopware/shopware.deduplicate.service";
 import { ProtractorService } from "../protractor/protractor.service";
+import { ProtractorDeduplicateServiceItemService } from "../protractor/protractor.deduplicate.service";
 import { GooglesheetService } from "../googlesheet/googlesheet.service";
 import { AccuzipApiService } from "../accuzip/api.service";
+
+const activeShopList = [
+  // 398,
+  // 1159,
+  // 1552,
+  // 3028,
+  // 3586,
+  // 3229,
+  // 3472,
+  293, 1216, 4494, 888, 309, 2442, 3543, 3547,
+  // 3758,
+  // 3540,
+  // 3539,
+  // 3761,
+  // 1873,
+  // 3542,
+  // 3541,
+  // 3759,
+  // 331,
+  // 1692,
+  // 2305,
+  // 3520,
+  // 1398,
+  // 3351,
+  // 3385,
+  // 4120
+];
 
 const shopIds = [
   // '1',
@@ -90,7 +122,12 @@ export class JobsService {
   constructor(
     private readonly tekmetricService: TekmetricService,
     private readonly shopwareServic: ShopwareService,
+    private readonly shopwareCustomerService: ShopwareCustomerService,
+    private readonly shopwareRepairOrderService: ShopwareRepairOrderService,
+    private readonly shopwareShopService: ShopwareShopService,
+    private readonly shopwareDeduplicateService: ShopWareDeduplicate,
     private readonly protractorService: ProtractorService,
+    private readonly protractorDeduplicatedService: ProtractorDeduplicateServiceItemService,
     private readonly tekmetricCustomerService: TekmetricCustomerService,
     private readonly tekmetricJobService: TekmetricJobService,
     private readonly tekmetricRepairOrtherService: TekmetricRepairOrderService,
@@ -112,10 +149,19 @@ export class JobsService {
   TEKMETRICtestJob() {
     return this.runSyncJob("Test Job", async () => {
       this.logger.log(`TEKMETRICTest job is executing...`);
+      
+      // const res = await this.accuzipApiService.ncoaApi()
 
-      const owners = await this.tekmetricDeduplicate.fetchChainShops()
+      // console.log(res)
 
-      console.log(owners)
+      // const res = await this.tekmetricShopService.fetchShopData()
+
+      // console.log(res)
+      // await this.protractorDeduplicatedService.generateCleanupReportCSV('Highline – AZ')
+
+      // await this.protractorService.fetchAndwrtieProtractorToDB(180, 'Highline – AZ')
+
+
 
     });
   }

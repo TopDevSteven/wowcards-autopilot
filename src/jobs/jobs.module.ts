@@ -14,7 +14,7 @@ import { AccuzipModule } from "../accuzip/accuzip.module";
     ProtractorModule,
     ScheduleModule.forRoot(),
     GooglesheetModule,
-    AccuzipModule
+    AccuzipModule,
   ],
   providers: [JobsService],
 })

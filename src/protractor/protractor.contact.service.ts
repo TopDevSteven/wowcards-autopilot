@@ -51,7 +51,10 @@ type ProtractorContact = {
 export class ProtractorContactService {
   constructor(@Inject("DB_CONNECTION") private readonly db: Pool) {}
 
-  async writeProtractorContactsToDB(protractorContact: ProtractorContact[], shopname: string) {
+  async writeProtractorContactsToDB(
+    protractorContact: ProtractorContact[],
+    shopname: string,
+  ) {
     const contacts = protractorContact.reduce(
       (result, contact) => ({
         ids: [...result.ids, contact.ID],
@@ -105,7 +108,7 @@ export class ProtractorContactService {
         firstNames: [] as (string | null)[],
         middleNames: [] as (string | null)[],
         lastNames: [] as (string | null)[],
-        shopnames: [] as (string | null) [],
+        shopnames: [] as (string | null)[],
         suffixes: [] as (string | null)[],
         addresstitles: [] as (string | null)[],
         addressstreets: [] as (string | null)[],

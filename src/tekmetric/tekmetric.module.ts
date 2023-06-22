@@ -1,4 +1,4 @@
-import { Module , forwardRef} from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TekmetricController } from "./tekmetric.controller";
 import { TekmetricService } from "./tekmetric.service";
 import { TekmetricShopService } from "./tekmetric.shop.service";

@@ -62,11 +62,18 @@ export class TekmetricRepairOrderService {
   }
 
   async writeRepairOrderPageData(index: number, shop_id: number) {
-    const result = await this.fetchRepariOrderEachPagesData(
-      `/repair-orders?page=${index}&size=300&shop=${shop_id}`,
-    );
-    console.log(result);
-    await this.writeRepairOrdersToDB(result);
+    try{
+      const result = await this.fetchRepariOrderEachPagesData(
+        `/repair-orders?page=${index}&size=300&shop=${shop_id}`,
+      );
+      await this.writeRepairOrdersToDB(result);
+    } catch(error) {
+      const result = await this.fetchRepariOrderEachPagesData(
+        `/repair-orders?page=${index}&size=300&shop=${shop_id}`,
+      );
+      await this.writeRepairOrdersToDB(result);
+    }
+    
   }
 
   async writeRepairOrdersToDB(tekrepareorders: TekRepairOrders[]) {

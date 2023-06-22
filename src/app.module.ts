@@ -10,10 +10,10 @@ import { DbModule } from "./db/db.module";
 import { JobsModule } from "./jobs/jobs.module";
 import { ShopwareModule } from "./shopware/shopware.module";
 import { ProtractorModule } from "./protractor/protractor.module";
-import { GooglesheetService } from './googlesheet/googlesheet.service';
-import { GooglesheetModule } from './googlesheet/googlesheet.module';
-import { AccuzipModule } from './accuzip/accuzip.module';
-import { CallbackModule } from './callback/callback.module';
+import { GooglesheetService } from "./googlesheet/googlesheet.service";
+import { GooglesheetModule } from "./googlesheet/googlesheet.module";
+import { AccuzipModule } from "./accuzip/accuzip.module";
+import { CallbackModule } from "./callback/callback.module";
 
 @Module({
   imports: [

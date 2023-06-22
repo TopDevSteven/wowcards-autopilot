@@ -8,8 +8,6 @@ import { TekmetricEmployeeService } from "./tekmetric.employee.service";
 import { TekmetricCustomerService } from "./tekmetric.customer.service";
 import { TekmetricShop } from "./api.service";
 
-
-
 type ShopForNotification = {
   id: number;
   name: string | null;
@@ -40,7 +38,7 @@ export class TekmetricShopService {
         phones: [...result.phones, shop.phone],
         emails: [...result.emails, shop.email],
         websites: [...result.websites, shop.website],
-        status: [...result.status, "Connected"]
+        status: [...result.status, "Connected"],
       }),
       {
         ids: [] as number[],
@@ -55,9 +53,42 @@ export class TekmetricShopService {
     return connectedShops;
   }
 
-  async writeTekShopsToDB(){
-    const connectedTekShops = await this.fetchShopData()
+  async writeTekShopsToDB() {
+    const connectedTekShops = await this.fetchShopData();
     
+    await this.db.query(
+      `
+      INSERT INTO tekshop (
+        id,
+        name,
+        phone,
+        email,
+        website
+      )
+        SELECT * FROM UNNEST (
+        $1::bigint[],
+        $2::varchar(50)[],
+        $3::varchar(50)[],
+        $4::varchar(50)[],
+        $5::varchar(50)[]
+      )
+        ON CONFLICT (id)
+        DO UPDATE
+        SET
+        name = EXCLUDED.name,
+        phone = EXCLUDED.phone,
+        email = EXCLUDED.email,
+        website = EXCLUDED.website`,
+      [
+        connectedTekShops.ids,
+        connectedTekShops.names,
+        connectedTekShops.phones,
+        connectedTekShops.emails,
+        connectedTekShops.websites
+      ]
+    )
+
+    await console.log("success")
   }
 
   // async fetchAndWriteShopData() {
@@ -148,7 +179,7 @@ export class TekmetricShopService {
   //   const send_new_shop = await Promise.all(
   //     newShops.map((shop) => this.getShopSInfoForNotification(shop, true)),
   //   );
-    
+
   //   const notify_shops = send_new_shop.concat(oldShopInfo);
 
   //   await this.tekmetricmailer.sendEmail(notify_shops);

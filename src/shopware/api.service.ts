@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import fetch, { RequestInit, Response } from "node-fetch";
+import HttpsProxyAgent from "https-proxy-agent";
 
 function createErrorMessage(path: string, body: unknown, method?: string) {
   return `Shopware API request failed: ${method || "GET"} ${path}
@@ -30,6 +31,9 @@ export class ShopWareApiService {
           "Content-Type": "application/json",
           ...options?.headers,
         },
+        agent: HttpsProxyAgent(
+          "http://14a6bcbf08595:82a07ac06c@115.167.16.89:12323",
+        ),
         ...options,
       },
     );

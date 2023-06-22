@@ -234,6 +234,8 @@ export class TekmetricCustomerService {
       `/customers?page=${index}&size=300&shop=${shop_id}`,
     );
 
+    console.log(result)
+
     result.flat().map(function (element) {
       if (element.address == null) {
         element.address = {
@@ -259,6 +261,14 @@ export class TekmetricCustomerService {
     await this.writeCustomersToDB(result);
   }
 
+  async writeCustomerEachPageData(index: number, shop_id: number){
+    try{
+      await this.writeCustomerPageData(index, shop_id)
+    }catch(error) {
+      await this.writeCustomerPageData(index, shop_id)
+    }
+  }
+
   async fetchAndWriteCustomerData(shop_id: number) {
     const res = await this.apiService.fetch<{
       content: TekmetricCustomer[];
@@ -266,15 +276,13 @@ export class TekmetricCustomerService {
       size: number;
     }>(`/customers?shop=${shop_id}`);
 
-    console.log(res);
-
     const pageSize = res.size;
     const pageGroup = Math.floor((res.totalPages * pageSize) / 300) + 1;
     const pagesArray = new Array(pageGroup).fill(1);
 
     await Promise.all(
       pagesArray.map((page, index) =>
-        this.writeCustomerPageData(index, shop_id),
+        this.writeCustomerEachPageData(index, shop_id),
       ),
     );
 

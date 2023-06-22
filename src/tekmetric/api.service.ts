@@ -33,14 +33,12 @@ export type TekmetricShop = {
   roCustomLabelEnabled: boolean;
 };
 
-
 type TokenResult = {
   accessToken: string;
   tokenType: string;
   createdAt: Date;
   scope: string;
 };
-
 
 function createErrorMessage(path: string, body: unknown, method?: string) {
   return `Tekmetric API request failed: ${method || "GET"} ${path}

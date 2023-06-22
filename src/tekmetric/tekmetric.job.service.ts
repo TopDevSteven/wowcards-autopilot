@@ -205,12 +205,22 @@ export class TekmetricJobService {
   }
 
   async writeJobPageData(index: number, shop_id: number) {
-    const result = await this.fetchJobEachPagesData(
-      `/jobs?page=${index}&size=1500&shop=${shop_id}`,
-    );
-
-    console.log(result)
-    await this.writeJobsToDB(result);
+    try{
+      const result = await this.fetchJobEachPagesData(
+        `/jobs?page=${index}&size=1500&shop=${shop_id}`,
+      );
+  
+      console.log(result);
+      await this.writeJobsToDB(result);
+    }catch(err) {
+      const result = await this.fetchJobEachPagesData(
+        `/jobs?page=${index}&size=1500&shop=${shop_id}`,
+      );
+  
+      console.log(result);
+      await this.writeJobsToDB(result);
+    }
+    
   }
 
   async fetchAndWriteJobData(shop_id: number) {

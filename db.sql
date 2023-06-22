@@ -179,7 +179,10 @@ create table shopwarecustomer (
     state varchar(50),
     zip varchar(50),
     customer_type varchar(50),
-    okmarketing boolean
+    okmarketing boolean,
+	shopid int,
+	originshopid int,
+	tenant int
 )
 
 create table shopwarerepairorder (
