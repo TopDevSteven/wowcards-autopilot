@@ -11,6 +11,9 @@ type CustomerObject = {
     newFirstName: string;
     newLastName: string;
     nameCode: string;
+    b_year: string | null;
+    b_month: string | null;
+    b_day: string |  null;
     phone1: string | null;
     phone2: string | null;
     email: string | null;
@@ -22,6 +25,7 @@ type CustomerObject = {
     lastVisitStr: string;
     lastvisit: Date;
     shopname: string | null;
+    chainid: number | null;
     software: string;
 }
 
@@ -32,7 +36,7 @@ export class ProtractorDeduplicateServiceItemService {
     private readonly protractorService: ProtractorService,
   ) {}
 
-  async fetchRawCustomerData(shop_name: string) {
+  async fetchRawCustomerData(shop_name: string, chain_id: number | null) {
     const res = await this.protractorService.getProtractorReport(shop_name)
     const rawCustomers = res.map((customer): CustomerObject => {
         return {
@@ -42,6 +46,9 @@ export class ProtractorDeduplicateServiceItemService {
             newFirstName: "",
             newLastName: "",
             nameCode: "",
+            b_year: customer.b_year,
+            b_month: customer.b_month,
+            b_day: customer.b_day,
             phone1: customer.phone1 ?  customer.phone1 : "",
             phone2: customer.phone2 ? customer.phone2: "",
             email: customer.email ? customer.email: "",
@@ -49,20 +56,20 @@ export class ProtractorDeduplicateServiceItemService {
             city: customer.addresscity ? customer.addresscity: "",
             state: customer.addressprovince ? customer.addressprovince: "",
             postalcode: customer.addresspostalcode ? customer.addresspostalcode: "",
-            country: customer.addresscountry ?  customer.addresscountries: "",
+            country: customer.addresscountry ?  customer.addresscountry: "",
             lastVisitStr: "",
             lastvisit: customer.lastvisitdate,
             shopname: shop_name,
-            software: "Pro"
+            chainid: chain_id == 0 ? null: chain_id ,
+            software: "PRO"
         };
     });
 
     return rawCustomers;
   }
 
-  async list_cleanup(shop_name: string) {
-    const rawCustomers = await this.fetchRawCustomerData(shop_name);
-    console.log(rawCustomers)
+  async list_cleanup(shop_name: string, chain_id: number | null) {
+    const rawCustomers = await this.fetchRawCustomerData(shop_name, chain_id);
     const newCustomerData = rawCustomers.map((customer) => {
         let newNameCode = {
             firstname: "",
@@ -71,74 +78,88 @@ export class ProtractorDeduplicateServiceItemService {
         }
         let newCustomer = {...customer};
 
-        if (/[-&\/]|(\()|[,]|( and )/i.test(newCustomer.firstName)) {
-            newCustomer.firstName = newCustomer.firstName
-              .split(/[-&\/]|(\()|[,]|( and )/i)[0]
-              .trim();
-            newNameCode.firstname = "New Name";
-            if (
-              /[@]/.test(newCustomer.firstName) ||
-              newCustomer.firstName.trim().split(/\s/).length > 2
-            ) {
-              newCustomer.firstName = "";
-              newNameCode.firstname = "Bad Name";
-            } else if (
-              newCustomer.firstName.trim().length === 1 ||
-              newCustomer.firstName.trim().length === 0
-            ) {
-              newCustomer.firstName = "";
-              newNameCode.firstname = "Bad Name";
-            } else if (
-              newCustomer.firstName.trim().length > 11 &&
-              newCustomer.firstName.trim().split(/\s/).length == 2
-            ) {
-              newCustomer.firstName = "";
-              newNameCode.firstname = "Bad Name";
-            }
-        } else if (
-            /[@]/.test(newCustomer.firstName) ||
-            newCustomer.firstName.trim().split(/\s/).length > 2
-          ) {
+        const keywords = ["Associates", "Auto Body", "Autobody", "Center", "Company", "Corp","Dept", "Enterprise", "Inc.", "Insurance", "Landscap", "LLC", "Motor", "Office", "Rental", "Repair", "Salvage", "Service", "Supply", "Tire", "Towing"] 
+        if (/[-&,*^\/]|(\()|( and )|( OR )/i.test(newCustomer.firstName)) {
+          newCustomer.firstName = newCustomer.firstName.split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0].trim();
+          newNameCode.firstname = "New Name";
+          if (/'\s|[@]/.test(newCustomer.firstName) || newCustomer.firstName.trim().split(/\s/).length > 2) {
             newCustomer.firstName = "";
             newNameCode.firstname = "Bad Name";
-          } else if (
-            newCustomer.firstName.trim().length > 11 &&
-            newCustomer.firstName.trim().split(/\s/).length == 2
-          ) {
+          } else if (newCustomer.firstName.trim().length === 1 || newCustomer.firstName.trim().length === 0) {
             newCustomer.firstName = "";
             newNameCode.firstname = "Bad Name";
-          } else if (
-            newCustomer.firstName.trim().length === 1 ||
-            newCustomer.firstName.trim().length === 0
-          ) {
+          }  else if (/\d/.test(newCustomer.firstName) || newCustomer.firstName.includes("'S ") || newCustomer.firstName.includes("'s ")) {
             newCustomer.firstName = "";
             newNameCode.firstname = "Bad Name";
-          } else {
-            newNameCode.firstname = "";
+          } else if (keywords.some(keyword => newCustomer.firstName.includes(keyword))) {
+            newCustomer.firstName = "";
+            newNameCode.firstname = "Bad Name";
+          } else if (/\bAuto\b/.test(newCustomer.firstName) || /\bCar\b/.test(newCustomer.firstName) || /\bInc\b/.test(newCustomer.firstName) || /\bTown\b/.test(newCustomer.firstName)) {
+            newCustomer.firstName = "";
+            newNameCode.firstname = "Bad Name";
+          } else if (newCustomer.firstName.trim().length > 12 && newCustomer.firstName.includes(' ')) {
+            newCustomer.firstName = "";
+            newNameCode.firstname = "Bad Name";
           }
-  
-          if (/[-\/]|[,]/.test(newCustomer.lastName)) {
-            newCustomer.lastName = newCustomer.lastName.split(/[-\/]|[,]/)[1].trim();
-            newNameCode.lastname = "New Name";
-            if (
-              /[@]|[&]|(\))/.test(newCustomer.lastName) ||
-              newCustomer.lastName.trim().length === 1 ||
-              newCustomer.lastName.trim().split(/\s/).length > 2
-            ) {
-              newCustomer.lastName = "";
-              newNameCode.lastname = "Bad Name";
+        } else if (/'\s|[@]/.test(newCustomer.firstName) || newCustomer.firstName.trim().split(/\s/).length > 2) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (newCustomer.firstName.trim().length === 1 || newCustomer.firstName.trim().length === 0) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (/\d/.test(newCustomer.firstName) || newCustomer.firstName.includes("'S ") ||  newCustomer.firstName.includes("'s ")) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (keywords.some(keyword => newCustomer.firstName.includes(keyword))) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name"
+        } else if (/\bAuto\b/.test(newCustomer.firstName) || /\bCar\b/.test(newCustomer.firstName) || /\bInc\b/.test(newCustomer.firstName) || /\bTown\b/.test(newCustomer.firstName)) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (newCustomer.firstName.trim().length > 12 && newCustomer.firstName.includes(' ')) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else {
+          newNameCode.firstname = "";
+        }
+
+        if (/[-,*^\/]/.test(newCustomer.lastName)) {
+          let splitName = newCustomer.lastName.split(/[-,*^\/]/);
+          // console.log(splitName)
+          if (splitName[1].length === 0) {
+              newCustomer.lastName = splitName[0].trim();
+              if (newCustomer.lastName.includes(' OR ')){
+                newCustomer.lastName = newCustomer.lastName.split(' OR ')[1]
+              }
+          } else {
+            newCustomer.lastName = splitName[1].trim()
+            if (newCustomer.lastName.includes(' OR ')){
+              newCustomer.lastName = newCustomer.lastName.split(' OR ')[1]
             }
-          } else if (
-            /[@]|[&]|(\))/.test(newCustomer.lastName) ||
-            newCustomer.lastName.trim().length === 1 ||
-            newCustomer.lastName.trim().length === 0 ||
-            newCustomer.lastName.trim().split(/\s/).length > 2
-          ) {
+          }
+          newNameCode.lastname = "New Name";
+          if (/[@]|[&]|(\))/.test(newCustomer.lastName) || newCustomer.lastName.trim().length === 1) {
             newCustomer.lastName = "";
             newNameCode.lastname = "Bad Name";
-          } else {
-            newNameCode.lastname = "";
+          } else if (/\d/.test(newCustomer.lastName) || newCustomer.lastName.includes("'S ") ||  newCustomer.lastName.includes("'s ") || newCustomer.lastName.split(".").length > 2) {
+            newCustomer.lastName = "";
+            newNameCode.lastname = "Bad Name";
+          } else if(newCustomer.lastName.trim().length > 14 && newCustomer.lastName.includes(' ')) {
+            newCustomer.lastName = "";
+            newNameCode.lastname = "Bad Name";
           }
+        } else if (/[@]|[&]|(\))/.test(newCustomer.lastName) ||newCustomer.lastName.trim().length === 1 || newCustomer.lastName.trim().length === 0) {
+          newCustomer.lastName = "";
+          newNameCode.lastname = "Bad Name";
+        } else if (/\d/.test(newCustomer.lastName) || newCustomer.lastName.includes("'S ") ||  newCustomer.lastName.includes("'s ") || newCustomer.lastName.split(".").length > 2) {
+          newCustomer.lastName = "";
+          newNameCode.lastname = "Bad Name";
+        } else if(newCustomer.lastName.trim().length > 14 && newCustomer.lastName.includes(' ')) {
+          newCustomer.lastName = "";
+          newNameCode.lastname = "Bad Name";
+        } else {
+          newNameCode.lastname = "";
+        }
   
           if (
             newNameCode.firstname == "Bad Name" ||
@@ -169,14 +190,18 @@ export class ProtractorDeduplicateServiceItemService {
             new_firstname: item.newName.firstName,
             new_lastname: item.newName.lastName,
             namecode: item.nameStatus.resultname,
-            address: item.oldName.street,
-            address1: "",
+            b_year: item.oldName.b_year,
+            b_month: item.oldName.b_month,
+            b_day: item.oldName.b_day,
+            address1: item.oldName.street,
+            address2: "",
             city: item.oldName.city,
             province: item.oldName.state,
             postalcode: item.oldName.postalcode,
             shop_name: item.oldName.shopname,
             str_date: item.oldName.lastvisit.toISOString().split("T")[0],
             visited_date: item.oldName.lastvisit,
+            chain_id: item.oldName.chainid,
             software: "Pr"
         }
     })
@@ -184,67 +209,67 @@ export class ProtractorDeduplicateServiceItemService {
     return cleanedCustomer;
   }
 
-  async addDupFlag(shop_name: string) {
-    const noAddDupFlagData = await this.list_cleanup(shop_name);
-    const counts = new Map<string, number>();
-    const mailables = new Map<string, Date>();
-    const sortedCustomers = [...noAddDupFlagData].sort(
-        (a, b) => b.visited_date.getTime() - a.visited_date.getTime()
-    );
-    sortedCustomers.forEach((customer) => {
-        const {old_firstname, old_lastname, address, visited_date} = customer;
-        const key = `${old_firstname}-${old_lastname}-${address}`;
-        counts.set(key, (counts.get(key) || 0) + 1);
-        if (!mailables.has(key)) {
-            mailables.set(key, visited_date);
-        }
-    });
+  // async addDupFlag(shop_name: string) {
+  //   const noAddDupFlagData = await this.list_cleanup(shop_name);
+  //   const counts = new Map<string, number>();
+  //   const mailables = new Map<string, Date>();
+  //   const sortedCustomers = [...noAddDupFlagData].sort(
+  //       (a, b) => b.visited_date.getTime() - a.visited_date.getTime()
+  //   );
+  //   sortedCustomers.forEach((customer) => {
+  //       const {old_firstname, old_lastname, address, visited_date} = customer;
+  //       const key = `${old_firstname}-${old_lastname}-${address}`;
+  //       counts.set(key, (counts.get(key) || 0) + 1);
+  //       if (!mailables.has(key)) {
+  //           mailables.set(key, visited_date);
+  //       }
+  //   });
 
-    return noAddDupFlagData.map((customer) => {
-        const {old_firstname, old_lastname, address, visited_date} = customer;
-        const key = `${old_firstname}-${old_lastname}-${address}`;
-        const isDuplicate = (counts.get(key) || 0) > 0 && mailables.get(key) !== visited_date ? "Duplicate" : "";
-        return {...customer, isDuplicate};
-    });
-  }
+  //   return noAddDupFlagData.map((customer) => {
+  //       const {old_firstname, old_lastname, address, visited_date} = customer;
+  //       const key = `${old_firstname}-${old_lastname}-${address}`;
+  //       const isDuplicate = (counts.get(key) || 0) > 0 && mailables.get(key) !== visited_date ? "Duplicate" : "";
+  //       return {...customer, isDuplicate};
+  //   });
+  // }
 
-  async addBadAddressFlag(shop_name: string) {
-    const noBadAddressFlagData = await this.addDupFlag(shop_name);
+  // async addBadAddressFlag(shop_name: string) {
+  //   const noBadAddressFlagData = await this.addDupFlag(shop_name);
 
-    return noBadAddressFlagData.map((customer) => {
-        const badAddressFlag = customer.address.trim().length == 0 ? "Bad Address" : "";
-        return {...customer, badAddressFlag};
-    })
-  }
+  //   return noBadAddressFlagData.map((customer) => {
+  //       const badAddressFlag = customer.address.trim().length == 0 ? "Bad Address" : "";
+  //       return {...customer, badAddressFlag};
+  //   })
+  // }
 
-  async generateCleanupReportCSV(shop_name: string) {
-    const customers = await this.addBadAddressFlag(shop_name);
-    const writer = csvWriter.createObjectCsvWriter({
-        path:  path.resolve(__dirname, `./csvFiles/ProCleanupReport-${shop_name}.csv`),
-        header: [
-            { id: "old_firstname", title: "First Name" },
-            { id: "old_lastname", title: "Last Name" },
-            { id: "new_firstname", title: "New First Name" },
-            { id: "new_lastname", title: "New Last Name" },
-            { id: "namecode", title: "NameCode" },
-            { id: "isDuplicate", title: "Duplicate Flag" },
-            { id: "id", title: "Customer ID"},
-            { id: "str_date", title: "LastVisited Date" },
-            { id: "address", title: "Address" },
-            { id: "address2", title: "Address2"},
-            { id: "badAddressFlag", title: "BadAddress Flag"},
-            { id: "city", title: "City" },
-            { id: "province", title: "State" },
-            { id: "postalcode", title: "Zip" },
-            { id: "shop_name", title: "Shop Name" },
-            { id: "shop_phone", title: "Shop Phone" },
-            { id: "shop_email", title: "Shop Email" },
-            { id: "software", title: "Software"},
-        ]
-    })
+  // async generateCleanupReportCSV(shop_name: string) {
+  //   const customers = await this.addBadAddressFlag(shop_name);
+  //   const writer = csvWriter.createObjectCsvWriter({
+  //       path:  path.resolve(__dirname, `./csvFiles/ProCleanupReport-${shop_name}.csv`),
+  //       header: [
+  //           { id: "old_firstname", title: "First Name" },
+  //           { id: "old_lastname", title: "Last Name" },
+  //           { id: "new_firstname", title: "New First Name" },
+  //           { id: "new_lastname", title: "New Last Name" },
+  //           { id: "namecode", title: "NameCode" },
+  //           { id: "isDuplicate", title: "Duplicate Flag" },
+  //           { id: "id", title: "Customer ID"},
+  //           { id: "str_date", title: "LastVisited Date" },
+  //           { id: "address", title: "Address" },
+  //           { id: "address2", title: "Address2"},
+  //           { id: "badAddressFlag", title: "BadAddress Flag"},
+  //           { id: "city", title: "City" },
+  //           { id: "province", title: "State" },
+  //           { id: "postalcode", title: "Zip" },
+  //           { id: "shop_name", title: "Shop Name" },
+  //           { id: "shop_phone", title: "Shop Phone" },
+  //           { id: "shop_email", title: "Shop Email" },
+  //           { id: "software", title: "Software"},
+  //       ]
+  //   })
 
-    await writer.writeRecords(customers).then(() => {
-        console.log('Done!');
-    })
-  }
+  //   await writer.writeRecords(customers).then(() => {
+  //       console.log('Done!');
+  //   })
+  // }
 }

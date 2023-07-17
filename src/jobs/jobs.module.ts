@@ -6,6 +6,7 @@ import { ProtractorModule } from "../protractor/protractor.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { GooglesheetModule } from "../googlesheet/googlesheet.module";
 import { AccuzipModule } from "../accuzip/accuzip.module";
+import { ListcleanupModule } from "../listcleanup/listcleanup.module";
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AccuzipModule } from "../accuzip/accuzip.module";
     ScheduleModule.forRoot(),
     GooglesheetModule,
     AccuzipModule,
+    ListcleanupModule
   ],
   providers: [JobsService],
 })

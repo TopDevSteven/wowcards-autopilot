@@ -340,67 +340,67 @@ export class TekmetricService {
     });
   }
 
-  async generateDepReportBasedSI(shop_id: number) {
-    const deDuplicateService = this.moduleref.get(TekmetricDeduplicate);
-    const customers = await deDuplicateService.addBadAddressFlagSI(shop_id);
-    const writer = csvWriter.createObjectCsvWriter({
-      path: path.resolve(__dirname, `./staticFiles/TekReport(${shop_id}).csv`),
-      header: [
-        { id: "old_firstname", title: "First Name" },
-        { id: "old_lastname", title: "Last Name" },
-        { id: "new_firstname", title: "New First Name" },
-        { id: "new_lastname", title: "New Last Name" },
-        { id: "namecode", title: "NameCode" },
-        { id: "isDuplicate", title: "Duplicate Flag" },
-        { id: "id", title: "Customer ID"},
-        { id: "str_date", title: "Authorized Date" },
-        { id: "address1", title: "Address" },
-        { id: "address2", title: "Address2" },
-        { id: "badAddressFlag", title: "BadAddress Flag"},
-        { id: "address_city", title: "City"},
-        { id: "address_state", title: "State"},
-        { id: "address_zip", title: "Zip"},
-        { id: "shop_name", title: "Shop Name"},
-        { id: "shop_phone", title: "Shop Phone"},
-        { id: "shop_email", title: "Shop Email"},
-        { id: "shop_id", title: "Shop Id" },
-        { id: "software", title: "Software"}
-      ],
-    });
+  // async generateDepReportBasedSI(shop_id: number) {
+  //   const deDuplicateService = this.moduleref.get(TekmetricDeduplicate);
+  //   const customers = await deDuplicateService.addBadAddressFlagSI(shop_id);
+  //   const writer = csvWriter.createObjectCsvWriter({
+  //     path: path.resolve(__dirname, `./staticFiles/TekReport(${shop_id}).csv`),
+  //     header: [
+  //       { id: "old_firstname", title: "First Name" },
+  //       { id: "old_lastname", title: "Last Name" },
+  //       { id: "new_firstname", title: "New First Name" },
+  //       { id: "new_lastname", title: "New Last Name" },
+  //       { id: "namecode", title: "NameCode" },
+  //       { id: "isDuplicate", title: "Duplicate Flag" },
+  //       { id: "id", title: "Customer ID"},
+  //       { id: "str_date", title: "Authorized Date" },
+  //       { id: "address1", title: "Address" },
+  //       { id: "address2", title: "Address2" },
+  //       { id: "badAddressFlag", title: "BadAddress Flag"},
+  //       { id: "address_city", title: "City"},
+  //       { id: "address_state", title: "State"},
+  //       { id: "address_zip", title: "Zip"},
+  //       { id: "shop_name", title: "Shop Name"},
+  //       { id: "shop_phone", title: "Shop Phone"},
+  //       { id: "shop_email", title: "Shop Email"},
+  //       { id: "shop_id", title: "Shop Id" },
+  //       { id: "software", title: "Software"}
+  //     ],
+  //   });
 
-    await writer.writeRecords(customers).then(() => {
-      console.log("Done!");
-    });
-  }
+  //   await writer.writeRecords(customers).then(() => {
+  //     console.log("Done!");
+  //   });
+  // }
 
-  async generateDepReportBasedCI() {
-    const deDuplicateService = this.moduleref.get(TekmetricDeduplicate);
-    const customers = await deDuplicateService.addDupFlagBasedCI();
-    const writer = csvWriter.createObjectCsvWriter({
-      path: path.resolve(__dirname, "deduplicateReport(CI).csv"),
-      header: [
-        { id: "old_firstname", title: "First Name" },
-        { id: "old_lastname", title: "Last Name" },
-        { id: "new_firstname", title: "New First Name" },
-        { id: "new_lastname", title: "New Last Name" },
-        { id: "namecode", title: "NameCode" },
-        { id: "isDuplicate", title: "Duplicate Flag" },
-        { id: "id", title: "Customer ID"},
-        { id: "address1", title: "Address1" },
-        { id: "address2", title: "Address2" },
-        { id: "address_city", title: "Address City" },
-        { id: "address_state", title: "Address State" },
-        { id: "address_zip", title: "Address Zip" },
-        { id: "shop_id", title: "Shop Id" },
-        { id: "str_date", title: "Authorized Date" },
-        { id: "owner_firstname", title: "Owner FirstName" },
-        { id: "owner_secondname", title: "Owner SecondName" },
-        { id: "owner_email", title: "Owner Email" },
-      ],
-    });
+  // async generateDepReportBasedCI() {
+  //   const deDuplicateService = this.moduleref.get(TekmetricDeduplicate);
+  //   const customers = await deDuplicateService.addDupFlagBasedCI();
+  //   const writer = csvWriter.createObjectCsvWriter({
+  //     path: path.resolve(__dirname, "deduplicateReport(CI).csv"),
+  //     header: [
+  //       { id: "old_firstname", title: "First Name" },
+  //       { id: "old_lastname", title: "Last Name" },
+  //       { id: "new_firstname", title: "New First Name" },
+  //       { id: "new_lastname", title: "New Last Name" },
+  //       { id: "namecode", title: "NameCode" },
+  //       { id: "isDuplicate", title: "Duplicate Flag" },
+  //       { id: "id", title: "Customer ID"},
+  //       { id: "address1", title: "Address1" },
+  //       { id: "address2", title: "Address2" },
+  //       { id: "address_city", title: "Address City" },
+  //       { id: "address_state", title: "Address State" },
+  //       { id: "address_zip", title: "Address Zip" },
+  //       { id: "shop_id", title: "Shop Id" },
+  //       { id: "str_date", title: "Authorized Date" },
+  //       { id: "owner_firstname", title: "Owner FirstName" },
+  //       { id: "owner_secondname", title: "Owner SecondName" },
+  //       { id: "owner_email", title: "Owner Email" },
+  //     ],
+  //   });
 
-    await writer.writeRecords(customers).then(() => {
-      console.log("Done!");
-    });
-  }
+  //   await writer.writeRecords(customers).then(() => {
+  //     console.log("Done!");
+  //   });
+  // }
 }

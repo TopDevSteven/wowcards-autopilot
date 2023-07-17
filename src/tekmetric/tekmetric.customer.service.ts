@@ -2,6 +2,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Pool } from "pg";
 import { ConfigService } from "@nestjs/config";
 import { TekmetricApiService } from "./api.service";
+import * as fs from 'fs';
+import csv from 'csv-parser';
 
 type TekmetricCustomer = {
   id: number;
@@ -33,6 +35,22 @@ type TekmetricCustomer = {
   birthday: Date | null;
 };
 
+type CSVCustomerObject = {
+  '616': string,
+  'customerId': string,
+  'MONTH': string,
+  'First': string | null,
+  'Last': string | null,
+  'Address Line 1': string | null,
+  'Address Line 2': string | null,
+  'City': string | null,
+  'State': string | null,
+  'Zip': string | null,
+  'firstVisitDate': string | null,
+  'lastVisitDate': string | null,
+  'chain name': string | null
+}
+
 @Injectable()
 export class TekmetricCustomerService {
   private readonly logger = new Logger(TekmetricCustomerService.name);
@@ -41,6 +59,186 @@ export class TekmetricCustomerService {
     private readonly apiService: TekmetricApiService,
     @Inject("DB_CONNECTION") private readonly db: Pool,
   ) {}
+
+  async fetchCustomersFromCSV(filePath: string): Promise<CSVCustomerObject[]> {
+    const results: any = [];
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (data) => results.push(data))
+            .on('end', () => {
+                resolve(results);
+            })
+            .on('error', (error) => {
+                reject(error);
+            });
+    });
+  }
+
+  async writeCSVToDB (tekcustomers: CSVCustomerObject[]) {
+    const customers = tekcustomers.reduce(
+      (result, customer) => ({
+        ids: [...result.ids, Number(customer['customerId'])],
+        firstNames: [...result.firstNames, customer['First']],
+        lastNames: [...result.lastNames, customer['Last']],
+        emails: [...result.emails, ""],
+        addresses1: [...result.addresses1, customer['Address Line 1']],
+        addresses2: [...result.addresses2, customer['Address Line 2']],
+        addresses_cities: [...result.addresses_cities, customer['City']],
+        addresses_states: [...result.addresses_states, customer['State']],
+        addresses_zips: [...result.addresses_zips, customer['Zip']],
+        phone1s: [...result.phone1s, ""],
+        phone2s: [...result.phone2s, ""],
+        phone3s: [...result.phone3s, ""],
+        note: [...result.note, ""],
+        customerTypes_ids: [
+          ...result.customerTypes_ids,
+          0
+        ],
+        customerTypes_codes: [
+          ...result.customerTypes_codes,
+          null
+        ],
+        customerTypes_names: [
+          ...result.customerTypes_names,
+          null
+        ],
+        contactFirstNames: [
+          ...result.contactFirstNames,
+          null
+        ],
+        contactLastNames: [
+          ...result.contactLastNames,
+          null
+        ],
+        shopIds: [...result.shopIds, 0],
+        okForMarketings: [...result.okForMarketings, null],
+        createdDates: [...result.createdDates, null],
+        updatedDates: [...result.updatedDates, null],
+        deletedDates: [...result.deletedDates, null],
+        birthdays: [...result.birthdays, null],
+      }),
+      {
+        ids: [] as number[],
+        firstNames: [] as (string | null)[],
+        lastNames: [] as (string | null)[],
+        emails: [] as (string | null)[],
+        addresses1: [] as (string | null)[],
+        addresses2: [] as (string | null)[],
+        addresses_cities: [] as (string | null)[],
+        addresses_states: [] as (string | null)[],
+        addresses_zips: [] as (string | null)[],
+        phone1s: [] as (string | null)[],
+        phone2s: [] as (string | null)[],
+        phone3s: [] as (string | null)[],
+        note: [] as (string | null)[],
+        customerTypes_ids: [] as number[],
+        customerTypes_codes: [] as (string | null)[],
+        customerTypes_names: [] as (string | null)[],
+        contactFirstNames: [] as (string | null)[],
+        contactLastNames: [] as (string | null)[],
+        shopIds: [] as number[],
+        okForMarketings: [] as (boolean | null)[],
+        createdDates: [] as (Date | null)[],
+        updatedDates: [] as (Date | null)[],
+        deletedDates: [] as (Date | null)[],
+        birthdays: [] as (Date | null)[],
+      },
+    );
+    await this.db.query(
+      `
+      INSERT INTO tekcustomer (
+        id,
+        firstName,
+        lastName,
+        email,
+        address1,
+        address2,
+        address_city,
+        address_state,
+        address_zip,
+        phone1,
+        phone2,
+        phone3,
+        notes,
+        customertype_id,
+        customertype_code,
+        customertype_name,
+        contactfirstname,
+        contactlastname,
+        shopid,
+        okformarketing,
+        createddate,
+        updateddate,
+        deleteddate,
+        birthday
+      )
+      SELECT * FROM UNNEST (
+        $1::bigint[],
+        $2::varchar(50)[],
+        $3::varchar(50)[],
+        $4::varchar(50)[],
+        $5::varchar(50)[],
+        $6::varchar(50)[],
+        $7::varchar(50)[],
+        $8::varchar(50)[],
+        $9::varchar(50)[],
+        $10::varchar(50)[],
+        $11::varchar(50)[],
+        $12::varchar(50)[],
+        $13::varchar(150)[],
+        $14::bigint[],
+        $15::varchar(50)[],
+        $16::varchar(50)[],
+        $17::varchar(50)[],
+        $18::varchar(50)[],
+        $19::bigint[],
+        $20::boolean[],
+        $21::date[],
+        $22::date[],
+        $23::date[],
+        $24::date[]
+      )
+      ON CONFLICT (id)
+      DO UPDATE
+      SET
+      id = EXCLUDED.id,
+      firstName = EXCLUDED.firstName,
+      lastName = EXCLUDED.lastName,
+      address1 = EXCLUDED.address1,
+      address2 = EXCLUDED.address2,
+      address_city = EXCLUDED.address_city,
+      address_state = EXCLUDED.address_state,
+      address_zip = EXCLUDED.address_zip
+      `,
+      [
+        customers.ids,
+        customers.firstNames,
+        customers.lastNames,
+        customers.emails,
+        customers.addresses1,
+        customers.addresses2,
+        customers.addresses_cities,
+        customers.addresses_states,
+        customers.addresses_zips,
+        customers.phone1s,
+        customers.phone2s,
+        customers.phone3s,
+        customers.note,
+        customers.customerTypes_ids,
+        customers.customerTypes_codes,
+        customers.customerTypes_names,
+        customers.contactFirstNames,
+        customers.contactLastNames,
+        customers.shopIds,
+        customers.okForMarketings,
+        customers.createdDates,
+        customers.updatedDates,
+        customers.deletedDates,
+        customers.birthdays,
+      ],
+    );
+  }
 
   async fetchCustomerEachPagesData(url: string) {
     const res = await this.apiService.fetch<{

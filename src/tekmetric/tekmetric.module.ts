@@ -8,6 +8,7 @@ import { TekmetricRepairOrderService } from "./tekmertric.repairorder.service";
 import { TekmetricEmployeeService } from "./tekmetric.employee.service";
 import { TekmetricSendEmailService } from "./tekmetric.sendemail.service";
 import { TekmetricDeduplicate } from "./tekmetric.deduplicate.service";
+import { TekBdayService } from "./tekmetric.bday.service";
 import { DbModule } from "../db/db.module";
 import { HttpModule } from "@nestjs/axios";
 import { TekmetricApiService } from "./api.service";
@@ -52,7 +53,7 @@ import * as path from "path";
     TekmetricSendEmailService,
     TekmetricDeduplicate,
     TekmetricService,
-    // return types
+    TekBdayService,
   ],
   exports: [
     TekmetricCustomerService,
@@ -64,6 +65,7 @@ import * as path from "path";
     TekmetricApiService,
     TekmetricDeduplicate,
     TekmetricService,
+    TekBdayService,
   ],
 })
 export class TekmetricModule {}

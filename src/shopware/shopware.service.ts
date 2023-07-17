@@ -145,6 +145,9 @@ export class ShopwareService {
       c.shopid,
       c.originshopid,
       c.tenant,
+      b.b_year,
+      b.b_month,
+      b.b_day,
       r.maxupdated_date,
       s.shopware_shop_id,
       s.name,
@@ -157,8 +160,9 @@ export class ShopwareService {
         GROUP BY customer_id
       ) as r ON c.id = r.customer_id
       LEFT JOIN shopwareshop s ON c.shopid = s.shopware_shop_id
+      LEFT JOIN shopwarebday b ON CAST(b.customer_id AS INTEGER) = c.id
       WHERE r.maxupdated_date >= DATE(NOW() - INTERVAL '4 YEARS 3 MONTHS')
-      AND c.tenant = ${tanent_id}
+      AND c.tenant = ${tanent_id} and c.shopid = ${shop_id}
       `
     );
 

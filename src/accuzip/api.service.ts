@@ -14,7 +14,7 @@ type RawAddress = {
 export class AccuzipApiService {
   constructor(private configService: ConfigService) {}
 
-  async ncoaApi() {
+  async valid_api() {
     const apiKey = `${this.configService.get<string>("ACCUZIP_API_KEY")}`;
     const accuzipApiUrl =
       "https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/INFO";
@@ -37,4 +37,5 @@ export class AccuzipApiService {
 
     return response.json();
   }
+
 }

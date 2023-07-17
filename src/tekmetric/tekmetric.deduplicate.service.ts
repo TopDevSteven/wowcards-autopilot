@@ -13,6 +13,9 @@ type CustomerObject = {
   id: number;
   firstname: string;
   lastname: string;
+  byear: string | null;
+  bmonth: string | null;
+  bday: string | null;
   address1: string;
   address2: string;
   address_city: string;
@@ -21,6 +24,7 @@ type CustomerObject = {
   shopname:  string | null;
   shopphone: string | null;
   shopemail: string | null;
+  chain_id: number | null;
   lastauthorized_date: Date;
 };
 
@@ -30,68 +34,68 @@ type NameCodeObject = {
   resultname: string;
 };
 
-type InputObject = {
-  oldName: CustomerObject;
-  newName: CustomerObject;
-  nameStatus: NameCodeObject;
-};
+// type InputObject = {
+//   oldName: CustomerObject;
+//   newName: CustomerObject;
+//   nameStatus: NameCodeObject;
+// };
 
-type OutputObject = {
-  id: number
-  old_firstname: string;
-  old_lastname: string;
-  new_firstname: string;
-  new_lastname: string;
-  namecode: string;
-  address1: string;
-  address2: string;
-  address_city: string;
-  address_state: string;
-  address_zip: string;
-  shop_name: string| null;
-  shop_phone: string | null;
-  shop_email: string | null;
-  authorized_date: Date;
-  str_date: string;
-  shop_id: number;
-  software: string;
-};
+// type OutputObject = {
+//   id: number
+//   old_firstname: string;
+//   old_lastname: string;
+//   new_firstname: string;
+//   new_lastname: string;
+//   namecode: string;
+//   address1: string;
+//   address2: string;
+//   address_city: string;
+//   address_state: string;
+//   address_zip: string;
+//   shop_name: string| null;
+//   shop_phone: string | null;
+//   shop_email: string | null;
+//   authorized_date: Date;
+//   str_date: string;
+//   shop_id: number;
+//   software: string;
+// };
 
-type ChainObject = {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  address1: string;
-  address2: string;
-  city: string | null;
-  state: string;
-  zip: string | null;
-  fulladdress: string;
-  streetaddress: string;
-  shopid: number;
-};
+// type ChainObject = {
+//   id: string;
+//   firstname: string;
+//   lastname: string;
+//   email: string;
+//   address1: string;
+//   address2: string;
+//   city: string | null;
+//   state: string;
+//   zip: string | null;
+//   fulladdress: string;
+//   streetaddress: string;
+//   shopid: number;
+// };
 
-type ChainOutputObject = {
-  old_firstname: string | null;
-  old_lastname: string | null;
-  new_firstname: string | null;
-  new_lastname: string | null;
-  namecode: string | null;
-  address1: string;
-  address2: string;
-  address_city: string;
-  address_state: string;
-  address_zip: string;
-  owner_firstname: string | null;
-  owner_lastname: string | null;
-  owner_email: string | null;
-  owner_address1: string | null;
-  owner_address2: string | null;
-  shop_id: number;
-  authorized_date: Date;
-  str_date: string | null;
-};
+// type ChainOutputObject = {
+//   old_firstname: string | null;
+//   old_lastname: string | null;
+//   new_firstname: string | null;
+//   new_lastname: string | null;
+//   namecode: string | null;
+//   address1: string;
+//   address2: string;
+//   address_city: string;
+//   address_state: string;
+//   address_zip: string;
+//   owner_firstname: string | null;
+//   owner_lastname: string | null;
+//   owner_email: string | null;
+//   owner_address1: string | null;
+//   owner_address2: string | null;
+//   shop_id: number;
+//   authorized_date: Date;
+//   str_date: string | null;
+// };
 
 @Injectable()
 export class TekmetricDeduplicate {
@@ -105,7 +109,19 @@ export class TekmetricDeduplicate {
   async fetchRawCustomerDate(shop_id: number) {
     const res = await this.db.query(
       `
-        SELECT (c.id), (c.firstname), (c.lastname), (c.address1), (c.address2), c.address_city, c.address_state, c.address_zip, j.lastauthorized_date
+        SELECT 
+        (c.id), 
+        (c.firstname), 
+        (c.lastname), 
+        (c.address1), 
+        (c.address2), 
+        c.address_city, 
+        c.address_state, 
+        c.address_zip, 
+        j.lastauthorized_date,
+        b.b_year,
+        b.b_month,
+        b.b_day
         FROM tekcustomer AS c
         JOIN(
           SELECT customerid, MAX(authorizedDate) as lastauthorized_date
@@ -113,7 +129,12 @@ export class TekmetricDeduplicate {
           GROUP BY customerid
         ) as j
         ON c.id = j.customerid
-        WHERE DATE(j.lastauthorized_date) >= DATE(NOW() - INTERVAL '4 YEARS')
+        LEFT JOIN tekmetricbday b ON 
+        CASE 
+          WHEN b.customer_id ~ '^[0-9]+$' THEN CAST(b.customer_id AS INTEGER)
+          ELSE NULL
+        END = c.id
+        WHERE DATE(j.lastauthorized_date) >= DATE(NOW() - INTERVAL '4 YEARS 3 MONTHS')
         AND c.shopId = ${shop_id}
         `,
     );
@@ -133,7 +154,7 @@ export class TekmetricDeduplicate {
     return res.rows;
   }
 
-  async list_cleanup(shop_id: number) {
+  async list_cleanup(shop_id: number, chainid: number | null) {
     const rawCustomerData = await this.fetchRawCustomerDate(shop_id);
     const rawShopData = await this.fetchRawShopData(shop_id);
 
@@ -142,6 +163,9 @@ export class TekmetricDeduplicate {
         id: 1,
         firstname: "",
         lastname: "",
+        byear: null,
+        bmonth: null,
+        bday: null,
         address1: "",
         address2: "",
         address_city: "",
@@ -150,8 +174,12 @@ export class TekmetricDeduplicate {
         shopname: "",
         shopphone: "",
         shopemail: "",
+        chain_id: chainid != 0? chainid: null ,
         lastauthorized_date: new Date(),
       };
+      oldCustomer.byear = customer.b_year;
+      oldCustomer.bmonth = customer.b_month;
+      oldCustomer.bday = customer.b_day;
       customer.firstname != null
         ? (oldCustomer.firstname = customer.firstname
             .replace(/\s+/g, " ")
@@ -207,69 +235,83 @@ export class TekmetricDeduplicate {
           resultname: "",
         };
         let newCustomer: CustomerObject = { ...oldCustomer };
-        if (/[-&\/]|(\()|( and )|[,]/i.test(newCustomer.firstname)) {
-          newCustomer.firstname = newCustomer.firstname
-            .split(/[-&\/]|(\()|( and )|[,]/i)[0]
-            .trim();
+        const keywords = ["Associates", "Auto Body", "Autobody", "Center", "Company", "Corp","Dept", "Enterprise", "Inc.", "Insurance", "Landscap", "LLC", "Motor", "Office", "Rental", "Repair", "Salvage", "Service", "Supply", "Tire", "Towing"] 
+        if (/[-&,*^\/]|(\()|( and )|( OR )/i.test(newCustomer.firstname)) {
+          newCustomer.firstname = newCustomer.firstname.split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0].trim();
           newNameCode.firstname = "New Name";
-          if (
-            /[@]/.test(newCustomer.firstname) ||
-            newCustomer.firstname.trim().split(/\s/).length > 2
-          ) {
+          if (/'\s|[@]/.test(newCustomer.firstname) || newCustomer.firstname.trim().split(/\s/).length > 2) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (
-            newCustomer.firstname.trim().length === 1 ||
-            newCustomer.firstname.trim().length === 0
-          ) {
+          } else if (newCustomer.firstname.trim().length === 1 || newCustomer.firstname.trim().length === 0) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (
-            newCustomer.firstname.trim().length > 11 &&
-            newCustomer.firstname.trim().split(/\s/).length == 2
-          ) {
+          }  else if (/\d/.test(newCustomer.firstname) || newCustomer.firstname.includes("'S ") ||  newCustomer.firstname.includes("'s ")) {
+            newCustomer.firstname = "";
+            newNameCode.firstname = "Bad Name";
+          } else if (keywords.some(keyword => newCustomer.firstname.includes(keyword))) {
+            newCustomer.firstname = "";
+            newNameCode.firstname = "Bad Name";
+          } else if (/\bAuto\b/.test(newCustomer.firstname) || /\bCar\b/.test(newCustomer.firstname) || /\bInc\b/.test(newCustomer.firstname) || /\bTown\b/.test(newCustomer.firstname)) {
+            newCustomer.firstname = "";
+            newNameCode.firstname = "Bad Name";
+          } else if (newCustomer.firstname.trim().length > 12 && newCustomer.firstname.includes(' ')) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
           }
-        } else if (
-          /[@]/.test(newCustomer.firstname) ||
-          newCustomer.firstname.trim().split(/\s/).length > 2
-        ) {
+        } else if (/'\s|[@]/.test(newCustomer.firstname) || newCustomer.firstname.trim().split(/\s/).length > 2) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        } else if (
-          newCustomer.firstname.trim().length > 11 &&
-          newCustomer.firstname.trim().split(/\s/).length == 2
-        ) {
+        }  else if (newCustomer.firstname.trim().length === 1 || newCustomer.firstname.trim().length === 0) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        } else if (
-          newCustomer.firstname.trim().length === 1 ||
-          newCustomer.firstname.trim().length === 0
-        ) {
+        } else if (/\d/.test(newCustomer.firstname) || newCustomer.firstname.includes("'S ") ||  newCustomer.firstname.includes("'s ")) {
+          newCustomer.firstname = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (keywords.some(keyword => newCustomer.firstname.includes(keyword))) {
+          newCustomer.firstname = "";
+          newNameCode.firstname = "Bad Name"
+        } else if (/\bAuto\b/.test(newCustomer.firstname) || /\bCar\b/.test(newCustomer.firstname) || /\bInc\b/.test(newCustomer.firstname) || /\bTown\b/.test(newCustomer.firstname)) {
+          newCustomer.firstname = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (newCustomer.firstname.trim().length > 12 && newCustomer.firstname.includes(' ')) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
         } else {
           newNameCode.firstname = "";
         }
 
-        if (/[-\/]|[,]/.test(newCustomer.lastname)) {
-          newCustomer.lastname = newCustomer.lastname.split(/[-\/]|[,]/)[1].trim();
+        if (/[-,*^\/]/.test(newCustomer.lastname)) {
+          let splitName = newCustomer.lastname.split(/[-,*^\/]/);
+          // console.log(splitName)
+          if (splitName[1].length === 0) {
+              newCustomer.lastname = splitName[0].trim();
+              if (newCustomer.lastname.includes(' OR ')){
+                newCustomer.lastname = newCustomer.lastname.split(' OR ')[1]
+              }
+          } else {
+            newCustomer.lastname = splitName[1].trim();
+            if (newCustomer.lastname.includes(' OR ')){
+              newCustomer.lastname = newCustomer.lastname.split(' OR ')[1]
+            }
+          }
           newNameCode.lastname = "New Name";
-          if (
-            /[@]|[&]|(\))/.test(newCustomer.lastname) ||
-            newCustomer.lastname.trim().length === 1 ||
-            newCustomer.lastname.trim().split(/\s/).length > 2
-          ) {
+          if (/[@]|[&]|(\))/.test(newCustomer.lastname) || newCustomer.lastname.trim().length === 1) {
+            newCustomer.lastname = "";
+            newNameCode.lastname = "Bad Name";
+          } else if (/\d/.test(newCustomer.lastname) || newCustomer.lastname.includes("'S ") ||  newCustomer.lastname.includes("'s ") || newCustomer.lastname.split(".").length > 2) {
+            newCustomer.lastname = "";
+            newNameCode.lastname = "Bad Name";
+          } else if(newCustomer.lastname.trim().length > 14 && newCustomer.lastname.includes(' ')) {
             newCustomer.lastname = "";
             newNameCode.lastname = "Bad Name";
           }
-        } else if (
-          /[@]|[&]|(\))/.test(newCustomer.lastname) ||
-          newCustomer.lastname.trim().length === 1 ||
-          newCustomer.lastname.trim().length === 0 ||
-          newCustomer.lastname.trim().split(/\s/).length > 2
-        ) {
+        } else if (/[@]|[&]|(\))/.test(newCustomer.lastname) ||newCustomer.lastname.trim().length === 1 || newCustomer.lastname.trim().length === 0) {
+          newCustomer.lastname = "";
+          newNameCode.lastname = "Bad Name";
+        } else if (/\d/.test(newCustomer.lastname) || newCustomer.lastname.includes("'S ") ||  newCustomer.lastname.includes("'s ") || newCustomer.lastname.split(".").length > 2) {
+          newCustomer.lastname = "";
+          newNameCode.lastname = "Bad Name";
+        } else if(newCustomer.lastname.trim().length > 14 && newCustomer.lastname.includes(' ')) {
           newCustomer.lastname = "";
           newNameCode.lastname = "Bad Name";
         } else {
@@ -294,15 +336,10 @@ export class TekmetricDeduplicate {
           newName: newCustomer,
           nameStatus: newNameCode,
         };
-      },
+      }
     );
 
-    return Customers;
-  }
-
-  async transformerRawCustomer(shop_id: number) {
-    const rawCustomers = await this.list_cleanup(shop_id);
-    const newCustomers = rawCustomers.map((item: InputObject): OutputObject => {
+    const cleanedCustomer = Customers.map(item => {
       return {
         id: item.oldName.id,
         old_firstname: item.oldName.firstname.trim(),
@@ -310,6 +347,9 @@ export class TekmetricDeduplicate {
         new_firstname: item.newName.firstname.trim(),
         new_lastname: item.newName.lastname.trim(),
         namecode: item.nameStatus.resultname,
+        byear: item.oldName.byear,
+        bmonth: item.oldName.bmonth,
+        bday: item.oldName.bday,
         address1: item.oldName.address1,
         address2: item.oldName.address2,
         address_city: item.oldName.address_city,
@@ -321,168 +361,196 @@ export class TekmetricDeduplicate {
         authorized_date: item.oldName.lastauthorized_date,
         str_date: item.oldName.lastauthorized_date.toISOString().split("T")[0],
         shop_id: shop_id,
+        chain_id: item.oldName.chain_id,
         software: "tekmetric"
-      };
-    });
+    }});
 
-    return newCustomers;
+    return cleanedCustomer;
   }
 
-  async addDupFlagBasedSI(shop_id: number) {
-    const rawData = await this.transformerRawCustomer(shop_id);
-    const counts = new Map<string, number>();
-    const mailables = new Map<string, Date>();
-    const sortedCustomers = [...rawData].sort(
-      (a, b) => b.authorized_date.getTime() - a.authorized_date.getTime(),
-    );
-    sortedCustomers.forEach((customer) => {
-      const {
-        old_firstname,
-        old_lastname,
-        address1,
-        address2,
-        authorized_date,
-      } = customer;
-      const key = `${old_firstname}-${old_lastname}-${address1}-${address2}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
-      if (!mailables.has(key)) {
-        mailables.set(key, authorized_date);
-      }
-    });
-    return rawData.map((customer) => {
-      const {
-        old_firstname,
-        old_lastname,
-        address1,
-        address2,
-        authorized_date,
-      } = customer;
-      const key = `${old_firstname}-${old_lastname}-${address1}-${address2}`;
-      const isDuplicate =
-        (counts.get(key) || 0) > 1 && mailables.get(key) !== authorized_date
-          ? "Duplicate"
-          : "";
-      return { ...customer, isDuplicate };
-    });
-  }
+  // async transformerRawCustomer(shop_id: number) {
+  //   const rawCustomers = await this.list_cleanup(shop_id);
+  //   const newCustomers = rawCustomers.map((item: InputObject): OutputObject => {
+  //     return {
+  //       id: item.oldName.id,
+  //       old_firstname: item.oldName.firstname.trim(),
+  //       old_lastname: item.oldName.lastname.trim(),
+  //       new_firstname: item.newName.firstname.trim(),
+  //       new_lastname: item.newName.lastname.trim(),
+  //       namecode: item.nameStatus.resultname,
+  //       address1: item.oldName.address1,
+  //       address2: item.oldName.address2,
+  //       address_city: item.oldName.address_city,
+  //       address_state: item.oldName.address_state,
+  //       address_zip: item.oldName.address_zip,
+  //       shop_name: item.oldName.shopname,
+  //       shop_phone: item.oldName.shopphone,
+  //       shop_email: item.oldName.shopemail,
+  //       authorized_date: item.oldName.lastauthorized_date,
+  //       str_date: item.oldName.lastauthorized_date.toISOString().split("T")[0],
+  //       shop_id: shop_id,
+  //       software: "tekmetric"
+  //     };
+  //   });
 
-  async addBadAddressFlagSI(tenant_id: number) {
-    const noBadAddressFlagData = await this.addDupFlagBasedSI(tenant_id);
+  //   return newCustomers;
+  // }
 
-    return noBadAddressFlagData.map((customer) => {
-        const badAddressFlag = customer.address1.trim().length == 0 ? "Bad Address" : "";
-        return {...customer, badAddressFlag};
-    })
-  }
+  // async addDupFlagBasedSI(shop_id: number) {
+  //   const rawData = await this.transformerRawCustomer(shop_id);
+  //   const counts = new Map<string, number>();
+  //   const mailables = new Map<string, Date>();
+  //   const sortedCustomers = [...rawData].sort(
+  //     (a, b) => b.authorized_date.getTime() - a.authorized_date.getTime(),
+  //   );
+  //   sortedCustomers.forEach((customer) => {
+  //     const {
+  //       old_firstname,
+  //       old_lastname,
+  //       address1,
+  //       address2,
+  //       authorized_date,
+  //     } = customer;
+  //     const key = `${old_firstname}-${old_lastname}-${address1}-${address2}`;
+  //     counts.set(key, (counts.get(key) || 0) + 1);
+  //     if (!mailables.has(key)) {
+  //       mailables.set(key, authorized_date);
+  //     }
+  //   });
+  //   return rawData.map((customer) => {
+  //     const {
+  //       old_firstname,
+  //       old_lastname,
+  //       address1,
+  //       address2,
+  //       authorized_date,
+  //     } = customer;
+  //     const key = `${old_firstname}-${old_lastname}-${address1}-${address2}`;
+  //     const isDuplicate =
+  //       (counts.get(key) || 0) > 1 && mailables.get(key) !== authorized_date
+  //         ? "Duplicate"
+  //         : "";
+  //     return { ...customer, isDuplicate };
+  //   });
+  // }
 
-  async fetchChainShops() {
-    // const shopIds = await this.db.query(`SELECT id FROM tekshop`)
-    // const shopOwners = await Promise.all(
-    //     shopIds.rows.map(shop_id => this.tekmetricService.getOwners(shop_id.id))
-    // )
-    // In terms of activae Shop List
-    const shopOwners = await Promise.all(
-      activeShopList.map((id) => this.tekmetricService.getOwners(id)),
-    );
-    let map = new Map<string, ChainObject[]>();
-    for (let item of shopOwners.flat()) {
-      let key = `${item.firstname}-${item.lastname}-${item.email}`;
+  // async addBadAddressFlagSI(tenant_id: number) {
+  //   const noBadAddressFlagData = await this.addDupFlagBasedSI(tenant_id);
 
-      if (map.has(key)) {
-        let array = map.get(key);
-        array?.push(item);
-      } else {
-        map.set(key, [item]);
-      }
-    }
-    const groupedOwners: ChainObject[][] = Array.from(map.values());
+  //   return noBadAddressFlagData.map((customer) => {
+  //       const badAddressFlag = customer.address1.trim().length == 0 ? "Bad Address" : "";
+  //       return {...customer, badAddressFlag};
+  //   })
+  // }
 
-    return groupedOwners;
-  }
+  // async fetchChainShops() {
+  //   // const shopIds = await this.db.query(`SELECT id FROM tekshop`)
+  //   // const shopOwners = await Promise.all(
+  //   //     shopIds.rows.map(shop_id => this.tekmetricService.getOwners(shop_id.id))
+  //   // )
+  //   // In terms of activae Shop List
+  //   const shopOwners = await Promise.all(
+  //     activeShopList.map((id) => this.tekmetricService.getOwners(id)),
+  //   );
+  //   let map = new Map<string, ChainObject[]>();
+  //   for (let item of shopOwners.flat()) {
+  //     let key = `${item.firstname}-${item.lastname}-${item.email}`;
 
-  async fetchChainCustomer() {
-    const chainOwner = await this.fetchChainShops();
-    let chainGroup = new Array<ChainObject[]>();
-    for (let item of chainOwner) {
-      if (item.length > 1) {
-        chainGroup.push(item);
-      }
-    }
-    const chainCustomers: ChainOutputObject[][] = await Promise.all(
-      chainGroup.flat().map(async (owner: ChainObject) => {
-        const rawCustomers = await this.list_cleanup(owner.shopid);
-        const newCustomers = rawCustomers.map((item: InputObject) => {
-          return {
-            id: item.oldName.id,
-            old_firstname: item.oldName.firstname.trim(),
-            old_lastname: item.oldName.lastname.trim(),
-            new_firstname: item.newName.firstname.trim(),
-            new_lastname: item.newName.lastname.trim(),
-            namecode: item.nameStatus.resultname,
-            address1: item.oldName.address1,
-            address2: item.oldName.address2,
-            address_city: item.oldName.address_city,
-            address_state: item.oldName.address_state,
-            address_zip: item.oldName.address_zip,
-            owner_firstname: owner.firstname,
-            owner_lastname: owner.lastname,
-            owner_email: owner.email,
-            owner_address1: owner.address1,
-            owner_address2: owner.address2,
-            shop_id: owner.shopid,
-            authorized_date: item.oldName.lastauthorized_date,
-            str_date: item.oldName.lastauthorized_date
-              .toISOString()
-              .split("T")[0],
-          };
-        });
-        return newCustomers.flat();
-      }),
-    );
-    return chainCustomers.flat();
-  }
+  //     if (map.has(key)) {
+  //       let array = map.get(key);
+  //       array?.push(item);
+  //     } else {
+  //       map.set(key, [item]);
+  //     }
+  //   }
+  //   const groupedOwners: ChainObject[][] = Array.from(map.values());
 
-  async addDupFlagBasedCI() {
-    const rawData = await this.fetchChainCustomer();
-    const counts = new Map<string, number>();
-    const mailables = new Map<string, Date>();
-    const sortedCustomers = [...rawData].sort(
-      (a, b) => b.authorized_date.getTime() - a.authorized_date.getTime(),
-    );
-    sortedCustomers.forEach((customer) => {
-      const {
-        old_firstname,
-        old_lastname,
-        address1,
-        address2,
-        authorized_date,
-        owner_firstname,
-        owner_lastname,
-        owner_email,
-      } = customer;
-      const key = `${old_firstname}-${old_lastname}-${address1}-${address2}-${owner_firstname}-${owner_lastname}-${owner_email}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
-      if (!mailables.has(key)) {
-        mailables.set(key, authorized_date);
-      }
-    });
-    return rawData.map((customer) => {
-      const {
-        old_firstname,
-        old_lastname,
-        address1,
-        address2,
-        authorized_date,
-        owner_firstname,
-        owner_lastname,
-        owner_email,
-      } = customer;
-      const key = `${old_firstname}-${old_lastname}-${address1}-${address2}-${owner_firstname}-${owner_lastname}-${owner_email}`;
-      const isDuplicate =
-        (counts.get(key) || 0) > 1 && mailables.get(key) !== authorized_date
-          ? "Duplicate"
-          : "";
-      return { ...customer, isDuplicate };
-    });
-  }
+  //   return groupedOwners;
+  // }
+
+  // async fetchChainCustomer() {
+  //   const chainOwner = await this.fetchChainShops();
+  //   let chainGroup = new Array<ChainObject[]>();
+  //   for (let item of chainOwner) {
+  //     if (item.length > 1) {
+  //       chainGroup.push(item);
+  //     }
+  //   }
+  //   const chainCustomers: ChainOutputObject[][] = await Promise.all(
+  //     chainGroup.flat().map(async (owner: ChainObject) => {
+  //       const rawCustomers = await this.list_cleanup(owner.shopid);
+  //       const newCustomers = rawCustomers.map((item: InputObject) => {
+  //         return {
+  //           id: item.oldName.id,
+  //           old_firstname: item.oldName.firstname.trim(),
+  //           old_lastname: item.oldName.lastname.trim(),
+  //           new_firstname: item.newName.firstname.trim(),
+  //           new_lastname: item.newName.lastname.trim(),
+  //           namecode: item.nameStatus.resultname,
+  //           address1: item.oldName.address1,
+  //           address2: item.oldName.address2,
+  //           address_city: item.oldName.address_city,
+  //           address_state: item.oldName.address_state,
+  //           address_zip: item.oldName.address_zip,
+  //           owner_firstname: owner.firstname,
+  //           owner_lastname: owner.lastname,
+  //           owner_email: owner.email,
+  //           owner_address1: owner.address1,
+  //           owner_address2: owner.address2,
+  //           shop_id: owner.shopid,
+  //           authorized_date: item.oldName.lastauthorized_date,
+  //           str_date: item.oldName.lastauthorized_date
+  //             .toISOString()
+  //             .split("T")[0],
+  //         };
+  //       });
+  //       return newCustomers.flat();
+  //     }),
+  //   );
+  //   return chainCustomers.flat();
+  // }
+
+  // async addDupFlagBasedCI() {
+  //   const rawData = await this.fetchChainCustomer();
+  //   const counts = new Map<string, number>();
+  //   const mailables = new Map<string, Date>();
+  //   const sortedCustomers = [...rawData].sort(
+  //     (a, b) => b.authorized_date.getTime() - a.authorized_date.getTime(),
+  //   );
+  //   sortedCustomers.forEach((customer) => {
+  //     const {
+  //       old_firstname,
+  //       old_lastname,
+  //       address1,
+  //       address2,
+  //       authorized_date,
+  //       owner_firstname,
+  //       owner_lastname,
+  //       owner_email,
+  //     } = customer;
+  //     const key = `${old_firstname}-${old_lastname}-${address1}-${address2}-${owner_firstname}-${owner_lastname}-${owner_email}`;
+  //     counts.set(key, (counts.get(key) || 0) + 1);
+  //     if (!mailables.has(key)) {
+  //       mailables.set(key, authorized_date);
+  //     }
+  //   });
+  //   return rawData.map((customer) => {
+  //     const {
+  //       old_firstname,
+  //       old_lastname,
+  //       address1,
+  //       address2,
+  //       authorized_date,
+  //       owner_firstname,
+  //       owner_lastname,
+  //       owner_email,
+  //     } = customer;
+  //     const key = `${old_firstname}-${old_lastname}-${address1}-${address2}-${owner_firstname}-${owner_lastname}-${owner_email}`;
+  //     const isDuplicate =
+  //       (counts.get(key) || 0) > 1 && mailables.get(key) !== authorized_date
+  //         ? "Duplicate"
+  //         : "";
+  //     return { ...customer, isDuplicate };
+  //   });
+  // }
 }

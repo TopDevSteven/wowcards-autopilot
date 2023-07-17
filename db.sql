@@ -158,6 +158,13 @@ create table protractorinvoice (
 	locationid varchar(50)
 )
 
+create table protractorbday (
+	customer_id varchar(50) primary key unique,
+	shopname varchar(50),
+	b_year varchar(50),
+	b_month varchar(50),
+	b_day varchar(50)
+)
 -- Tables for shopware
 
 create table shopwareshop (
@@ -208,4 +215,13 @@ create table shopwarejob (
     shopware_shopid bigint,
     created_at timestamp,
     updated_at timestamp
+)
+
+create table shopwarebday (
+	customer_id varchar(50)  primary key unique,
+	shopid varchar(50),
+	tanentid varchar(50),
+	b_year varchar(50),
+	b_month varchar(50),
+	b_day varchar(50)
 )

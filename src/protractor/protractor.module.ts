@@ -6,6 +6,7 @@ import { ProtractorContactService } from "./protractor.contact.service";
 import { ProtractorInvoiceService } from "./protractor.invoice.service";
 import { ProtractorServiceItemService } from "./protrator.serviceitem.service";
 import { ProtractorDeduplicateServiceItemService } from "./protractor.deduplicate.service";
+import { ProtractorBdayService } from "./protractor.bday.service";
 import { BottleneckProvider } from "./bottleneck.provider";
 
 @Module({
@@ -18,13 +19,15 @@ import { BottleneckProvider } from "./bottleneck.provider";
     ProtractorInvoiceService,
     ProtractorServiceItemService,
     ProtractorDeduplicateServiceItemService,
+    ProtractorBdayService
   ],
   exports: [
     ProtractorService,
     ProtractorContactService,
     ProtractorInvoiceService,
     ProtractorServiceItemService,
-    ProtractorDeduplicateServiceItemService
+    ProtractorDeduplicateServiceItemService,
+    ProtractorBdayService
   ],
 })
 export class ProtractorModule {}

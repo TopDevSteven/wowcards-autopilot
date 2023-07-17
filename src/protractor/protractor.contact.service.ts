@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Pool } from "pg";
+import * as fs from 'fs';
+import csv from 'csv-parser';
 
 type ProtractorContact = {
   Header: {
@@ -47,9 +49,236 @@ type ProtractorContact = {
   NoPostCard: boolean | null;
 };
 
+type CSVContactObject = {
+  'storeId': string,
+  'Store Name': string,
+  'MONTH mix':  string,
+  'First': string | null,
+  'Last': string | null,
+  'Address Line 1': string | null,
+  'City': string | null,
+  'State': string | null,
+  'Zip': string | null,
+  'DPBC': string | null,
+  'CRRT': string | null,
+  'lastVisitDate': string | null,
+  'firstVisitDate': string | null,
+  'totalSales': string | null,
+  'totalVisits': string | null,
+  'averageRepairOrder': string | null,
+  'MDCOMPANY': string | null,
+  'MDDOB': string | null,
+  'Day cust': string | null,
+  'YEAR mix': string | null
+}
+
+
 @Injectable()
 export class ProtractorContactService {
   constructor(@Inject("DB_CONNECTION") private readonly db: Pool) {}
+
+  async fetchContactsFromCSV(filePath: string): Promise<CSVContactObject[]> {
+    const results: any = [];
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (data) => results.push(data))
+            .on('end', () => {
+                resolve(results);
+            })
+            .on('error', (error) => {
+                reject(error);
+            });
+    });
+  }
+
+  async writeCSVToDB(Contact: CSVContactObject[]) {
+    const contacts = Contact.reduce(
+      (result, contact) => ({
+        ids: [...result.ids, contact['storeId']],
+        creationTimes: [...result.creationTimes, null],
+        deletionTimes: [...result.deletionTimes, null],
+        lastModifiedTimes: [
+          ...result.lastModifiedTimes,
+          null
+        ],
+        fileAses: [...result.fileAses, null],
+        nameTitles: [...result.nameTitles, null],
+        namePrefixes: [...result.namePrefixes, null],
+        firstNames: [...result.firstNames, contact['First']],
+        middleNames: [...result.middleNames, null],
+        lastNames: [...result.lastNames, contact['Last']],
+        shopnames: [...result.shopnames, contact['Store Name']],
+        suffixes: [...result.suffixes, null],
+        addresstitles: [...result.addresstitles, null],
+        addressstreets: [...result.addressstreets, contact['Address Line 1']],
+        addresscities: [...result.addresscities, contact['City']],
+        addressprovinces: [
+          ...result.addressprovinces,
+          contact['State'],
+        ],
+        addresspostalcodes: [
+          ...result.addresspostalcodes,
+          contact['Zip']
+        ],
+        addresscountries: [...result.addresscountries, null],
+        companies: [...result.companies, null],
+        phone1Titles: [...result.phone1Titles, null],
+        phone1s: [...result.phone1s,null],
+        phone2Titles: [...result.phone2Titles,null],
+        phone2s: [...result.phone2s, null],
+        emailTitles: [...result.emailTitles, null],
+        emails: [...result.emails, null],
+        marketingSources: [...result.marketingSources, null],
+        notes: [...result.notes, null],
+        noMessaginges: [...result.noMessaginges, null],
+        noEmails: [...result.noEmails, null],
+        noPostCards: [...result.noPostCards, null],
+      }),
+      {
+        ids: [] as string[],
+        creationTimes: [] as (Date | null)[],
+        deletionTimes: [] as (Date | null)[],
+        lastModifiedTimes: [] as (Date | null)[],
+        fileAses: [] as (string | null)[],
+        nameTitles: [] as (string | null)[],
+        namePrefixes: [] as (string | null)[],
+        firstNames: [] as (string | null)[],
+        middleNames: [] as (string | null)[],
+        lastNames: [] as (string | null)[],
+        shopnames: [] as (string | null)[],
+        suffixes: [] as (string | null)[],
+        addresstitles: [] as (string | null)[],
+        addressstreets: [] as (string | null)[],
+        addresscities: [] as (string | null)[],
+        addressprovinces: [] as (string | null)[],
+        addresspostalcodes: [] as (string | null)[],
+        addresscountries: [] as (string | null)[],
+        companies: [] as (string | null)[],
+        phone1Titles: [] as (string | null)[],
+        phone1s: [] as (string | null)[],
+        phone2Titles: [] as (string | null)[],
+        phone2s: [] as (string | null)[],
+        emailTitles: [] as (string | null)[],
+        emails: [] as (string | null)[],
+        marketingSources: [] as (string | null)[],
+        notes: [] as (string | null)[],
+        noMessaginges: [] as (boolean | null)[],
+        noEmails: [] as (boolean | null)[],
+        noPostCards: [] as (boolean | null)[],
+      },
+    );
+    await this.db.query(
+      `
+            INSERT INTO protractorcontact (
+              id,
+              creationtime,
+              deletiontime,
+              lastmodifiedtime,
+              fileas,
+              nametitle,
+              nameprefix,
+              firstname,
+              middlename,
+              lastname,
+              shopname,
+              suffix,
+              addresstitle,
+              addressstreet,
+              addresscity,
+              addressprovince,
+              addresspostalcode,
+              addresscountry,
+              company,
+              phone1title,
+              phone1,
+              phone2title,
+              phone2,
+              emailtitle,
+              email,
+              marketingsource,
+              note,
+              nomessaging,
+              noemail,
+              nopostcard
+            )
+            SELECT * FROM UNNEST (
+              $1::varchar(150)[],
+              $2::date[],
+              $3::date[],
+              $4::date[],
+              $5::varchar(100)[],
+              $6::varchar(50)[],
+              $7::varchar(50)[],
+              $8::varchar(50)[],
+              $9::varchar(50)[],
+              $10::varchar(50)[],
+              $11::varchar(50)[],
+              $12::varchar(50)[],
+              $13::varchar(50)[],
+              $14::varchar(50)[],
+              $15::varchar(50)[],
+              $16::varchar(50)[],
+              $17::varchar(50)[],
+              $18::varchar(50)[],
+              $19::varchar(50)[],
+              $20::varchar(50)[],
+              $21::varchar(50)[],
+              $22::varchar(50)[],
+              $23::varchar(50)[],
+              $24::varchar(50)[],
+              $25::varchar(50)[],
+              $26::varchar(150)[],
+              $27::varchar(150)[],
+              $28::boolean[],
+              $29::boolean[],
+              $30::boolean[]
+            )
+            ON CONFLICT (id)
+            DO UPDATE
+            SET
+            id = EXCLUDED.id,
+            firstname = EXCLUDED.firstname,
+            middlename = EXCLUDED.middlename,
+            lastname = EXCLUDED.lastname,
+            addressstreet = EXCLUDED.addressstreet,
+            addresscity = EXCLUDED.addresscity,
+            addressprovince = EXCLUDED.addressprovince,
+            addresspostalcode = EXCLUDED.addresspostalcode`,
+      [
+        contacts.ids,
+        contacts.creationTimes,
+        contacts.deletionTimes,
+        contacts.lastModifiedTimes,
+        contacts.fileAses,
+        contacts.nameTitles,
+        contacts.namePrefixes,
+        contacts.firstNames,
+        contacts.middleNames,
+        contacts.lastNames,
+        contacts.shopnames,
+        contacts.suffixes,
+        contacts.addresstitles,
+        contacts.addressstreets,
+        contacts.addresscities,
+        contacts.addressprovinces,
+        contacts.addresspostalcodes,
+        contacts.addresscountries,
+        contacts.companies,
+        contacts.phone1Titles,
+        contacts.phone1s,
+        contacts.phone2Titles,
+        contacts.phone2s,
+        contacts.emailTitles,
+        contacts.emails,
+        contacts.marketingSources,
+        contacts.notes,
+        contacts.noMessaginges,
+        contacts.noEmails,
+        contacts.noPostCards,
+      ],
+    );
+  }
 
   async writeProtractorContactsToDB(
     protractorContact: ProtractorContact[],

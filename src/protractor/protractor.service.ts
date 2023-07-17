@@ -89,7 +89,10 @@ export class ProtractorService {
           lastVisit.invoicetime as lastVisitDate,
           AVG(i.grandtotal) as AROdollar,
           SUM(i.grandtotal) as TotalROdollars,
-          COUNT(i.id) as TotalROs
+          COUNT(i.id) as TotalROs,
+          b.b_year,
+          b.b_month,
+          b.b_day
       FROM protractorcontact c
       LEFT JOIN (
           SELECT contactid, MIN(invoicetime) as invoicetime
@@ -104,8 +107,10 @@ export class ProtractorService {
           GROUP BY contactid
       ) lastVisit ON lastVisit.contactid = c.id
       LEFT JOIN protractorinvoice i ON i.contactid = c.id
-      WHERE DATE(lastVisit.invoicetime) >= DATE(NOW() - INTERVAL ' 4 YEARS') AND c.shopname = 'Highline – AZ'
-      GROUP BY c.id, c.creationtime, c.lastmodifiedtime, c.firstname, c.middlename, c.lastname, c.shopname, c.suffix, c.addresstitle, c.addressstreet, c.addresscity, c.addressprovince, c.addresspostalcode, c.addresscountry, c.company, c.phone1title, c.phone1, c.phone2title, c.phone2, c.emailtitle, c.email, c.marketingsource, c.note, c.nomessaging, c.noemail, c.nopostCard, firstVisit.invoicetime, lastVisit.invoicetime;
+      LEFT JOIN protractorbday b ON b.customer_id = c.id
+      WHERE DATE(lastVisit.invoicetime) >= DATE(NOW() - INTERVAL '4 YEARS 3 MONTHS')
+      AND c.shopname='${shop_name}'
+      GROUP BY c.id,firstVisit.invoicetime, lastVisit.invoicetime, b.b_year, b.b_month, b.b_day;
       `
     );
 
@@ -152,7 +157,7 @@ export class ProtractorService {
 
   async generativeDateGroup() {
     const today = new Date();
-    let startDate = new Date("2021-06-01");
+    let startDate = new Date("2019-01-01");
     let endDate = new Date();
     let numofDays = 180;
     let DateGroups = new Array();
