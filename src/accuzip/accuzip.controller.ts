@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, UploadedFile } from "@nestjs/common";
 
-@Controller('accuzip')
+@Controller("accuzip")
 export class AccuzipController {}

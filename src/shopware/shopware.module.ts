@@ -11,22 +11,22 @@ import { SWBdayService } from "./shopware.bday.service";
 @Module({
   controllers: [ShopwareController],
   providers: [
-    ShopwareService, 
-    ShopWareApiService, 
+    ShopwareService,
+    ShopWareApiService,
     ShopwareCustomerService,
     ShopwareRepairOrderService,
     ShopwareShopService,
     ShopWareDeduplicate,
-    SWBdayService
+    SWBdayService,
   ],
   exports: [
-    ShopwareService, 
-    ShopwareCustomerService, 
+    ShopwareService,
+    ShopwareCustomerService,
     ShopWareApiService,
     ShopwareRepairOrderService,
     ShopwareShopService,
     ShopWareDeduplicate,
-    SWBdayService
+    SWBdayService,
   ],
 })
 export class ShopwareModule {}

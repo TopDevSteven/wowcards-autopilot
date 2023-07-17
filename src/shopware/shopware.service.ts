@@ -163,14 +163,14 @@ export class ShopwareService {
       LEFT JOIN shopwarebday b ON CAST(b.customer_id AS INTEGER) = c.id
       WHERE r.maxupdated_date >= DATE(NOW() - INTERVAL '4 YEARS 3 MONTHS')
       AND c.tenant = ${tanent_id} and c.shopid = ${shop_id}
-      `
+      `,
     );
 
     return res.rows;
   }
 
   async generateSwReportCSV(tanent_id: number) {
-    const customers = await this.getSWReport(tanent_id, 0)
+    const customers = await this.getSWReport(tanent_id, 0);
     const writer = csvWriter.createObjectCsvWriter({
       path: path.resolve(__dirname, "./csvFiles/SWReport.csv"),
       header: [
@@ -184,11 +184,11 @@ export class ShopwareService {
         { id: "shopid", title: "Shop Id" },
         { id: "originshopid", title: "Origin Shop ID" },
         { id: "tenant", title: "Tenant ID" },
-      ]
+      ],
     });
 
     await writer.writeRecords(customers).then(() => {
-      console.log('Done!');
-    })
+      console.log("Done!");
+    });
   }
 }

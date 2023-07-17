@@ -21,7 +21,7 @@ type CustomerObject = {
   address_city: string;
   address_state: string;
   address_zip: string;
-  shopname:  string | null;
+  shopname: string | null;
   shopphone: string | null;
   shopemail: string | null;
   chain_id: number | null;
@@ -144,12 +144,12 @@ export class TekmetricDeduplicate {
 
   async fetchRawShopData(shop_id: number) {
     const res = await this.db.query(
-        `
+      `
         SELECT s.name, s.phone, s.email
         FROM tekshop AS s
         WHERE s.id = ${shop_id}
-        `
-    )
+        `,
+    );
 
     return res.rows;
   }
@@ -174,7 +174,7 @@ export class TekmetricDeduplicate {
         shopname: "",
         shopphone: "",
         shopemail: "",
-        chain_id: chainid != 0? chainid: null ,
+        chain_id: chainid != 0 ? chainid : null,
         lastauthorized_date: new Date(),
       };
       oldCustomer.byear = customer.b_year;
@@ -224,7 +224,10 @@ export class TekmetricDeduplicate {
       return oldCustomer;
     });
 
-    const Customers = oldCustomerData.map((oldCustomer: CustomerObject): {
+    const Customers = oldCustomerData.map(
+      (
+        oldCustomer: CustomerObject,
+      ): {
         oldName: CustomerObject;
         newName: CustomerObject;
         nameStatus: NameCodeObject;
@@ -235,45 +238,109 @@ export class TekmetricDeduplicate {
           resultname: "",
         };
         let newCustomer: CustomerObject = { ...oldCustomer };
-        const keywords = ["Associates", "Auto Body", "Autobody", "Center", "Company", "Corp","Dept", "Enterprise", "Inc.", "Insurance", "Landscap", "LLC", "Motor", "Office", "Rental", "Repair", "Salvage", "Service", "Supply", "Tire", "Towing"] 
+        const keywords = [
+          "Associates",
+          "Auto Body",
+          "Autobody",
+          "Center",
+          "Company",
+          "Corp",
+          "Dept",
+          "Enterprise",
+          "Inc.",
+          "Insurance",
+          "Landscap",
+          "LLC",
+          "Motor",
+          "Office",
+          "Rental",
+          "Repair",
+          "Salvage",
+          "Service",
+          "Supply",
+          "Tire",
+          "Towing",
+        ];
         if (/[-&,*^\/]|(\()|( and )|( OR )/i.test(newCustomer.firstname)) {
-          newCustomer.firstname = newCustomer.firstname.split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0].trim();
+          newCustomer.firstname = newCustomer.firstname
+            .split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0]
+            .trim();
           newNameCode.firstname = "New Name";
-          if (/'\s|[@]/.test(newCustomer.firstname) || newCustomer.firstname.trim().split(/\s/).length > 2) {
+          if (
+            /'\s|[@]/.test(newCustomer.firstname) ||
+            newCustomer.firstname.trim().split(/\s/).length > 2
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (newCustomer.firstname.trim().length === 1 || newCustomer.firstname.trim().length === 0) {
+          } else if (
+            newCustomer.firstname.trim().length === 1 ||
+            newCustomer.firstname.trim().length === 0
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          }  else if (/\d/.test(newCustomer.firstname) || newCustomer.firstname.includes("'S ") ||  newCustomer.firstname.includes("'s ")) {
+          } else if (
+            /\d/.test(newCustomer.firstname) ||
+            newCustomer.firstname.includes("'S ") ||
+            newCustomer.firstname.includes("'s ")
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (keywords.some(keyword => newCustomer.firstname.includes(keyword))) {
+          } else if (
+            keywords.some((keyword) => newCustomer.firstname.includes(keyword))
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (/\bAuto\b/.test(newCustomer.firstname) || /\bCar\b/.test(newCustomer.firstname) || /\bInc\b/.test(newCustomer.firstname) || /\bTown\b/.test(newCustomer.firstname)) {
+          } else if (
+            /\bAuto\b/.test(newCustomer.firstname) ||
+            /\bCar\b/.test(newCustomer.firstname) ||
+            /\bInc\b/.test(newCustomer.firstname) ||
+            /\bTown\b/.test(newCustomer.firstname)
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
-          } else if (newCustomer.firstname.trim().length > 12 && newCustomer.firstname.includes(' ')) {
+          } else if (
+            newCustomer.firstname.trim().length > 12 &&
+            newCustomer.firstname.includes(" ")
+          ) {
             newCustomer.firstname = "";
             newNameCode.firstname = "Bad Name";
           }
-        } else if (/'\s|[@]/.test(newCustomer.firstname) || newCustomer.firstname.trim().split(/\s/).length > 2) {
+        } else if (
+          /'\s|[@]/.test(newCustomer.firstname) ||
+          newCustomer.firstname.trim().split(/\s/).length > 2
+        ) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        }  else if (newCustomer.firstname.trim().length === 1 || newCustomer.firstname.trim().length === 0) {
+        } else if (
+          newCustomer.firstname.trim().length === 1 ||
+          newCustomer.firstname.trim().length === 0
+        ) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        } else if (/\d/.test(newCustomer.firstname) || newCustomer.firstname.includes("'S ") ||  newCustomer.firstname.includes("'s ")) {
+        } else if (
+          /\d/.test(newCustomer.firstname) ||
+          newCustomer.firstname.includes("'S ") ||
+          newCustomer.firstname.includes("'s ")
+        ) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        } else if (keywords.some(keyword => newCustomer.firstname.includes(keyword))) {
-          newCustomer.firstname = "";
-          newNameCode.firstname = "Bad Name"
-        } else if (/\bAuto\b/.test(newCustomer.firstname) || /\bCar\b/.test(newCustomer.firstname) || /\bInc\b/.test(newCustomer.firstname) || /\bTown\b/.test(newCustomer.firstname)) {
+        } else if (
+          keywords.some((keyword) => newCustomer.firstname.includes(keyword))
+        ) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
-        } else if (newCustomer.firstname.trim().length > 12 && newCustomer.firstname.includes(' ')) {
+        } else if (
+          /\bAuto\b/.test(newCustomer.firstname) ||
+          /\bCar\b/.test(newCustomer.firstname) ||
+          /\bInc\b/.test(newCustomer.firstname) ||
+          /\bTown\b/.test(newCustomer.firstname)
+        ) {
+          newCustomer.firstname = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          newCustomer.firstname.trim().length > 12 &&
+          newCustomer.firstname.includes(" ")
+        ) {
           newCustomer.firstname = "";
           newNameCode.firstname = "Bad Name";
         } else {
@@ -284,34 +351,57 @@ export class TekmetricDeduplicate {
           let splitName = newCustomer.lastname.split(/[-,*^\/]/);
           // console.log(splitName)
           if (splitName[1].length === 0) {
-              newCustomer.lastname = splitName[0].trim();
-              if (newCustomer.lastname.includes(' OR ')){
-                newCustomer.lastname = newCustomer.lastname.split(' OR ')[1]
-              }
+            newCustomer.lastname = splitName[0].trim();
+            if (newCustomer.lastname.includes(" OR ")) {
+              newCustomer.lastname = newCustomer.lastname.split(" OR ")[1];
+            }
           } else {
             newCustomer.lastname = splitName[1].trim();
-            if (newCustomer.lastname.includes(' OR ')){
-              newCustomer.lastname = newCustomer.lastname.split(' OR ')[1]
+            if (newCustomer.lastname.includes(" OR ")) {
+              newCustomer.lastname = newCustomer.lastname.split(" OR ")[1];
             }
           }
           newNameCode.lastname = "New Name";
-          if (/[@]|[&]|(\))/.test(newCustomer.lastname) || newCustomer.lastname.trim().length === 1) {
+          if (
+            /[@]|[&]|(\))/.test(newCustomer.lastname) ||
+            newCustomer.lastname.trim().length === 1
+          ) {
             newCustomer.lastname = "";
             newNameCode.lastname = "Bad Name";
-          } else if (/\d/.test(newCustomer.lastname) || newCustomer.lastname.includes("'S ") ||  newCustomer.lastname.includes("'s ") || newCustomer.lastname.split(".").length > 2) {
+          } else if (
+            /\d/.test(newCustomer.lastname) ||
+            newCustomer.lastname.includes("'S ") ||
+            newCustomer.lastname.includes("'s ") ||
+            newCustomer.lastname.split(".").length > 2
+          ) {
             newCustomer.lastname = "";
             newNameCode.lastname = "Bad Name";
-          } else if(newCustomer.lastname.trim().length > 14 && newCustomer.lastname.includes(' ')) {
+          } else if (
+            newCustomer.lastname.trim().length > 14 &&
+            newCustomer.lastname.includes(" ")
+          ) {
             newCustomer.lastname = "";
             newNameCode.lastname = "Bad Name";
           }
-        } else if (/[@]|[&]|(\))/.test(newCustomer.lastname) ||newCustomer.lastname.trim().length === 1 || newCustomer.lastname.trim().length === 0) {
+        } else if (
+          /[@]|[&]|(\))/.test(newCustomer.lastname) ||
+          newCustomer.lastname.trim().length === 1 ||
+          newCustomer.lastname.trim().length === 0
+        ) {
           newCustomer.lastname = "";
           newNameCode.lastname = "Bad Name";
-        } else if (/\d/.test(newCustomer.lastname) || newCustomer.lastname.includes("'S ") ||  newCustomer.lastname.includes("'s ") || newCustomer.lastname.split(".").length > 2) {
+        } else if (
+          /\d/.test(newCustomer.lastname) ||
+          newCustomer.lastname.includes("'S ") ||
+          newCustomer.lastname.includes("'s ") ||
+          newCustomer.lastname.split(".").length > 2
+        ) {
           newCustomer.lastname = "";
           newNameCode.lastname = "Bad Name";
-        } else if(newCustomer.lastname.trim().length > 14 && newCustomer.lastname.includes(' ')) {
+        } else if (
+          newCustomer.lastname.trim().length > 14 &&
+          newCustomer.lastname.includes(" ")
+        ) {
           newCustomer.lastname = "";
           newNameCode.lastname = "Bad Name";
         } else {
@@ -336,10 +426,10 @@ export class TekmetricDeduplicate {
           newName: newCustomer,
           nameStatus: newNameCode,
         };
-      }
+      },
     );
 
-    const cleanedCustomer = Customers.map(item => {
+    const cleanedCustomer = Customers.map((item) => {
       return {
         id: item.oldName.id,
         old_firstname: item.oldName.firstname.trim(),
@@ -362,8 +452,9 @@ export class TekmetricDeduplicate {
         str_date: item.oldName.lastauthorized_date.toISOString().split("T")[0],
         shop_id: shop_id,
         chain_id: item.oldName.chain_id,
-        software: "tekmetric"
-    }});
+        software: "tekmetric",
+      };
+    });
 
     return cleanedCustomer;
   }

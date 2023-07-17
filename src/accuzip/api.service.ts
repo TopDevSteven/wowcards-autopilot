@@ -37,5 +37,4 @@ export class AccuzipApiService {
 
     return response.json();
   }
-
 }

@@ -55,7 +55,7 @@ export class TekmetricShopService {
 
   async writeTekShopsToDB() {
     const connectedTekShops = await this.fetchShopData();
-    
+
     await this.db.query(
       `
       INSERT INTO tekshop (
@@ -84,11 +84,11 @@ export class TekmetricShopService {
         connectedTekShops.names,
         connectedTekShops.phones,
         connectedTekShops.emails,
-        connectedTekShops.websites
-      ]
-    )
+        connectedTekShops.websites,
+      ],
+    );
 
-    await console.log("success")
+    await console.log("success");
   }
 
   // async fetchAndWriteShopData() {

@@ -19,7 +19,7 @@ import { BottleneckProvider } from "./bottleneck.provider";
     ProtractorInvoiceService,
     ProtractorServiceItemService,
     ProtractorDeduplicateServiceItemService,
-    ProtractorBdayService
+    ProtractorBdayService,
   ],
   exports: [
     ProtractorService,
@@ -27,7 +27,7 @@ import { BottleneckProvider } from "./bottleneck.provider";
     ProtractorInvoiceService,
     ProtractorServiceItemService,
     ProtractorDeduplicateServiceItemService,
-    ProtractorBdayService
+    ProtractorBdayService,
   ],
 })
 export class ProtractorModule {}

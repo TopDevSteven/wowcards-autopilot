@@ -5,29 +5,29 @@ const csvWriter = require("csv-writer");
 import path from "path";
 
 type CustomerObject = {
-    id: string;
-    firstName: string;
-    lastName: string;
-    newFirstName: string;
-    newLastName: string;
-    nameCode: string;
-    b_year: string | null;
-    b_month: string | null;
-    b_day: string |  null;
-    phone1: string | null;
-    phone2: string | null;
-    email: string | null;
-    street: string;
-    city: string | null;
-    state: string | null;
-    postalcode: string | null;
-    country: string | null;
-    lastVisitStr: string;
-    lastvisit: Date;
-    shopname: string | null;
-    chainid: number | null;
-    software: string;
-}
+  id: string;
+  firstName: string;
+  lastName: string;
+  newFirstName: string;
+  newLastName: string;
+  nameCode: string;
+  b_year: string | null;
+  b_month: string | null;
+  b_day: string | null;
+  phone1: string | null;
+  phone2: string | null;
+  email: string | null;
+  street: string;
+  city: string | null;
+  state: string | null;
+  postalcode: string | null;
+  country: string | null;
+  lastVisitStr: string;
+  lastvisit: Date;
+  shopname: string | null;
+  chainid: number | null;
+  software: string;
+};
 
 @Injectable()
 export class ProtractorDeduplicateServiceItemService {
@@ -37,32 +37,34 @@ export class ProtractorDeduplicateServiceItemService {
   ) {}
 
   async fetchRawCustomerData(shop_name: string, chain_id: number | null) {
-    const res = await this.protractorService.getProtractorReport(shop_name)
+    const res = await this.protractorService.getProtractorReport(shop_name);
     const rawCustomers = res.map((customer): CustomerObject => {
-        return {
-            id: customer.id,
-            firstName: customer.firstname ?customer.firstname: "",
-            lastName: customer.lastname ? customer.lastname: "",
-            newFirstName: "",
-            newLastName: "",
-            nameCode: "",
-            b_year: customer.b_year,
-            b_month: customer.b_month,
-            b_day: customer.b_day,
-            phone1: customer.phone1 ?  customer.phone1 : "",
-            phone2: customer.phone2 ? customer.phone2: "",
-            email: customer.email ? customer.email: "",
-            street: customer.addressstreet ? customer.addressstreet: "",
-            city: customer.addresscity ? customer.addresscity: "",
-            state: customer.addressprovince ? customer.addressprovince: "",
-            postalcode: customer.addresspostalcode ? customer.addresspostalcode: "",
-            country: customer.addresscountry ?  customer.addresscountry: "",
-            lastVisitStr: "",
-            lastvisit: customer.lastvisitdate,
-            shopname: shop_name,
-            chainid: chain_id == 0 ? null: chain_id ,
-            software: "PRO"
-        };
+      return {
+        id: customer.id,
+        firstName: customer.firstname ? customer.firstname : "",
+        lastName: customer.lastname ? customer.lastname : "",
+        newFirstName: "",
+        newLastName: "",
+        nameCode: "",
+        b_year: customer.b_year,
+        b_month: customer.b_month,
+        b_day: customer.b_day,
+        phone1: customer.phone1 ? customer.phone1 : "",
+        phone2: customer.phone2 ? customer.phone2 : "",
+        email: customer.email ? customer.email : "",
+        street: customer.addressstreet ? customer.addressstreet : "",
+        city: customer.addresscity ? customer.addresscity : "",
+        state: customer.addressprovince ? customer.addressprovince : "",
+        postalcode: customer.addresspostalcode
+          ? customer.addresspostalcode
+          : "",
+        country: customer.addresscountry ? customer.addresscountry : "",
+        lastVisitStr: "",
+        lastvisit: customer.lastvisitdate,
+        shopname: shop_name,
+        chainid: chain_id == 0 ? null : chain_id,
+        software: "PRO",
+      };
     });
 
     return rawCustomers;
@@ -71,140 +73,227 @@ export class ProtractorDeduplicateServiceItemService {
   async list_cleanup(shop_name: string, chain_id: number | null) {
     const rawCustomers = await this.fetchRawCustomerData(shop_name, chain_id);
     const newCustomerData = rawCustomers.map((customer) => {
-        let newNameCode = {
-            firstname: "",
-            lastname: "",
-            resultname: ""
-        }
-        let newCustomer = {...customer};
+      let newNameCode = {
+        firstname: "",
+        lastname: "",
+        resultname: "",
+      };
+      let newCustomer = { ...customer };
 
-        const keywords = ["Associates", "Auto Body", "Autobody", "Center", "Company", "Corp","Dept", "Enterprise", "Inc.", "Insurance", "Landscap", "LLC", "Motor", "Office", "Rental", "Repair", "Salvage", "Service", "Supply", "Tire", "Towing"] 
-        if (/[-&,*^\/]|(\()|( and )|( OR )/i.test(newCustomer.firstName)) {
-          newCustomer.firstName = newCustomer.firstName.split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0].trim();
-          newNameCode.firstname = "New Name";
-          if (/'\s|[@]/.test(newCustomer.firstName) || newCustomer.firstName.trim().split(/\s/).length > 2) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
-          } else if (newCustomer.firstName.trim().length === 1 || newCustomer.firstName.trim().length === 0) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
-          }  else if (/\d/.test(newCustomer.firstName) || newCustomer.firstName.includes("'S ") || newCustomer.firstName.includes("'s ")) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
-          } else if (keywords.some(keyword => newCustomer.firstName.includes(keyword))) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
-          } else if (/\bAuto\b/.test(newCustomer.firstName) || /\bCar\b/.test(newCustomer.firstName) || /\bInc\b/.test(newCustomer.firstName) || /\bTown\b/.test(newCustomer.firstName)) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
-          } else if (newCustomer.firstName.trim().length > 12 && newCustomer.firstName.includes(' ')) {
-            newCustomer.firstName = "";
-            newNameCode.firstname = "Bad Name";
+      const keywords = [
+        "Associates",
+        "Auto Body",
+        "Autobody",
+        "Center",
+        "Company",
+        "Corp",
+        "Dept",
+        "Enterprise",
+        "Inc.",
+        "Insurance",
+        "Landscap",
+        "LLC",
+        "Motor",
+        "Office",
+        "Rental",
+        "Repair",
+        "Salvage",
+        "Service",
+        "Supply",
+        "Tire",
+        "Towing",
+      ];
+      if (/[-&,*^\/]|(\()|( and )|( OR )/i.test(newCustomer.firstName)) {
+        newCustomer.firstName = newCustomer.firstName
+          .split(/[-&,*^\/]|(\()|( and )|( OR )/i)[0]
+          .trim();
+        newNameCode.firstname = "New Name";
+        if (
+          /'\s|[@]/.test(newCustomer.firstName) ||
+          newCustomer.firstName.trim().split(/\s/).length > 2
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          newCustomer.firstName.trim().length === 1 ||
+          newCustomer.firstName.trim().length === 0
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          /\d/.test(newCustomer.firstName) ||
+          newCustomer.firstName.includes("'S ") ||
+          newCustomer.firstName.includes("'s ")
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          keywords.some((keyword) => newCustomer.firstName.includes(keyword))
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          /\bAuto\b/.test(newCustomer.firstName) ||
+          /\bCar\b/.test(newCustomer.firstName) ||
+          /\bInc\b/.test(newCustomer.firstName) ||
+          /\bTown\b/.test(newCustomer.firstName)
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        } else if (
+          newCustomer.firstName.trim().length > 12 &&
+          newCustomer.firstName.includes(" ")
+        ) {
+          newCustomer.firstName = "";
+          newNameCode.firstname = "Bad Name";
+        }
+      } else if (
+        /'\s|[@]/.test(newCustomer.firstName) ||
+        newCustomer.firstName.trim().split(/\s/).length > 2
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else if (
+        newCustomer.firstName.trim().length === 1 ||
+        newCustomer.firstName.trim().length === 0
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else if (
+        /\d/.test(newCustomer.firstName) ||
+        newCustomer.firstName.includes("'S ") ||
+        newCustomer.firstName.includes("'s ")
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else if (
+        keywords.some((keyword) => newCustomer.firstName.includes(keyword))
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else if (
+        /\bAuto\b/.test(newCustomer.firstName) ||
+        /\bCar\b/.test(newCustomer.firstName) ||
+        /\bInc\b/.test(newCustomer.firstName) ||
+        /\bTown\b/.test(newCustomer.firstName)
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else if (
+        newCustomer.firstName.trim().length > 12 &&
+        newCustomer.firstName.includes(" ")
+      ) {
+        newCustomer.firstName = "";
+        newNameCode.firstname = "Bad Name";
+      } else {
+        newNameCode.firstname = "";
+      }
+
+      if (/[-,*^\/]/.test(newCustomer.lastName)) {
+        let splitName = newCustomer.lastName.split(/[-,*^\/]/);
+        // console.log(splitName)
+        if (splitName[1].length === 0) {
+          newCustomer.lastName = splitName[0].trim();
+          if (newCustomer.lastName.includes(" OR ")) {
+            newCustomer.lastName = newCustomer.lastName.split(" OR ")[1];
           }
-        } else if (/'\s|[@]/.test(newCustomer.firstName) || newCustomer.firstName.trim().split(/\s/).length > 2) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name";
-        } else if (newCustomer.firstName.trim().length === 1 || newCustomer.firstName.trim().length === 0) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name";
-        } else if (/\d/.test(newCustomer.firstName) || newCustomer.firstName.includes("'S ") ||  newCustomer.firstName.includes("'s ")) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name";
-        } else if (keywords.some(keyword => newCustomer.firstName.includes(keyword))) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name"
-        } else if (/\bAuto\b/.test(newCustomer.firstName) || /\bCar\b/.test(newCustomer.firstName) || /\bInc\b/.test(newCustomer.firstName) || /\bTown\b/.test(newCustomer.firstName)) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name";
-        } else if (newCustomer.firstName.trim().length > 12 && newCustomer.firstName.includes(' ')) {
-          newCustomer.firstName = "";
-          newNameCode.firstname = "Bad Name";
         } else {
-          newNameCode.firstname = "";
+          newCustomer.lastName = splitName[1].trim();
+          if (newCustomer.lastName.includes(" OR ")) {
+            newCustomer.lastName = newCustomer.lastName.split(" OR ")[1];
+          }
         }
-
-        if (/[-,*^\/]/.test(newCustomer.lastName)) {
-          let splitName = newCustomer.lastName.split(/[-,*^\/]/);
-          // console.log(splitName)
-          if (splitName[1].length === 0) {
-              newCustomer.lastName = splitName[0].trim();
-              if (newCustomer.lastName.includes(' OR ')){
-                newCustomer.lastName = newCustomer.lastName.split(' OR ')[1]
-              }
-          } else {
-            newCustomer.lastName = splitName[1].trim()
-            if (newCustomer.lastName.includes(' OR ')){
-              newCustomer.lastName = newCustomer.lastName.split(' OR ')[1]
-            }
-          }
-          newNameCode.lastname = "New Name";
-          if (/[@]|[&]|(\))/.test(newCustomer.lastName) || newCustomer.lastName.trim().length === 1) {
-            newCustomer.lastName = "";
-            newNameCode.lastname = "Bad Name";
-          } else if (/\d/.test(newCustomer.lastName) || newCustomer.lastName.includes("'S ") ||  newCustomer.lastName.includes("'s ") || newCustomer.lastName.split(".").length > 2) {
-            newCustomer.lastName = "";
-            newNameCode.lastname = "Bad Name";
-          } else if(newCustomer.lastName.trim().length > 14 && newCustomer.lastName.includes(' ')) {
-            newCustomer.lastName = "";
-            newNameCode.lastname = "Bad Name";
-          }
-        } else if (/[@]|[&]|(\))/.test(newCustomer.lastName) ||newCustomer.lastName.trim().length === 1 || newCustomer.lastName.trim().length === 0) {
+        newNameCode.lastname = "New Name";
+        if (
+          /[@]|[&]|(\))/.test(newCustomer.lastName) ||
+          newCustomer.lastName.trim().length === 1
+        ) {
           newCustomer.lastName = "";
           newNameCode.lastname = "Bad Name";
-        } else if (/\d/.test(newCustomer.lastName) || newCustomer.lastName.includes("'S ") ||  newCustomer.lastName.includes("'s ") || newCustomer.lastName.split(".").length > 2) {
+        } else if (
+          /\d/.test(newCustomer.lastName) ||
+          newCustomer.lastName.includes("'S ") ||
+          newCustomer.lastName.includes("'s ") ||
+          newCustomer.lastName.split(".").length > 2
+        ) {
           newCustomer.lastName = "";
           newNameCode.lastname = "Bad Name";
-        } else if(newCustomer.lastName.trim().length > 14 && newCustomer.lastName.includes(' ')) {
+        } else if (
+          newCustomer.lastName.trim().length > 14 &&
+          newCustomer.lastName.includes(" ")
+        ) {
           newCustomer.lastName = "";
           newNameCode.lastname = "Bad Name";
-        } else {
-          newNameCode.lastname = "";
         }
-  
-          if (
-            newNameCode.firstname == "Bad Name" ||
-            newNameCode.lastname == "Bad Name"
-          ) {
-            newNameCode.resultname = "Bad Name";
-          } else if (
-            newNameCode.firstname == "New Name" ||
-            newNameCode.lastname == "New Name"
-          ) {
-            newNameCode.resultname = "New Name";
-          } else {
-            newNameCode.resultname = "";
-          }
+      } else if (
+        /[@]|[&]|(\))/.test(newCustomer.lastName) ||
+        newCustomer.lastName.trim().length === 1 ||
+        newCustomer.lastName.trim().length === 0
+      ) {
+        newCustomer.lastName = "";
+        newNameCode.lastname = "Bad Name";
+      } else if (
+        /\d/.test(newCustomer.lastName) ||
+        newCustomer.lastName.includes("'S ") ||
+        newCustomer.lastName.includes("'s ") ||
+        newCustomer.lastName.split(".").length > 2
+      ) {
+        newCustomer.lastName = "";
+        newNameCode.lastname = "Bad Name";
+      } else if (
+        newCustomer.lastName.trim().length > 14 &&
+        newCustomer.lastName.includes(" ")
+      ) {
+        newCustomer.lastName = "";
+        newNameCode.lastname = "Bad Name";
+      } else {
+        newNameCode.lastname = "";
+      }
 
-          return {
-            oldName: customer,
-            newName: newCustomer,
-            nameStatus: newNameCode,
-          };
-    })
+      if (
+        newNameCode.firstname == "Bad Name" ||
+        newNameCode.lastname == "Bad Name"
+      ) {
+        newNameCode.resultname = "Bad Name";
+      } else if (
+        newNameCode.firstname == "New Name" ||
+        newNameCode.lastname == "New Name"
+      ) {
+        newNameCode.resultname = "New Name";
+      } else {
+        newNameCode.resultname = "";
+      }
 
-    const cleanedCustomer = newCustomerData.map(item => {
-        return {
-            id: item.oldName.id,
-            old_firstname: item.oldName.firstName,
-            old_lastname: item.oldName.lastName,
-            new_firstname: item.newName.firstName,
-            new_lastname: item.newName.lastName,
-            namecode: item.nameStatus.resultname,
-            b_year: item.oldName.b_year,
-            b_month: item.oldName.b_month,
-            b_day: item.oldName.b_day,
-            address1: item.oldName.street,
-            address2: "",
-            city: item.oldName.city,
-            province: item.oldName.state,
-            postalcode: item.oldName.postalcode,
-            shop_name: item.oldName.shopname,
-            str_date: item.oldName.lastvisit.toISOString().split("T")[0],
-            visited_date: item.oldName.lastvisit,
-            chain_id: item.oldName.chainid,
-            software: "Pr"
-        }
-    })
+      return {
+        oldName: customer,
+        newName: newCustomer,
+        nameStatus: newNameCode,
+      };
+    });
+
+    const cleanedCustomer = newCustomerData.map((item) => {
+      return {
+        id: item.oldName.id,
+        old_firstname: item.oldName.firstName,
+        old_lastname: item.oldName.lastName,
+        new_firstname: item.newName.firstName,
+        new_lastname: item.newName.lastName,
+        namecode: item.nameStatus.resultname,
+        b_year: item.oldName.b_year,
+        b_month: item.oldName.b_month,
+        b_day: item.oldName.b_day,
+        address1: item.oldName.street,
+        address2: "",
+        city: item.oldName.city,
+        province: item.oldName.state,
+        postalcode: item.oldName.postalcode,
+        shop_name: item.oldName.shopname,
+        str_date: item.oldName.lastvisit.toISOString().split("T")[0],
+        visited_date: item.oldName.lastvisit,
+        chain_id: item.oldName.chainid,
+        software: "Pr",
+      };
+    });
 
     return cleanedCustomer;
   }

@@ -4,7 +4,5 @@ import fetch from "node-fetch";
 
 @Injectable()
 export class CallbackService {
-    constructor(
-        private configService: ConfigService,
-    ){}
+  constructor(private configService: ConfigService) {}
 }

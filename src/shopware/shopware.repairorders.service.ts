@@ -54,7 +54,6 @@ type ShopWareRepairOrder = {
   };
 };
 
-
 @Injectable()
 export class ShopwareRepairOrderService {
   private readonly logger = new Logger(ShopwareRepairOrderService.name);
@@ -64,36 +63,39 @@ export class ShopwareRepairOrderService {
     @Inject("DB_CONNECTION") private readonly db: Pool,
   ) {}
 
-  async fetchAndWriteEachPageRepairOrder(tanent_id: number, currentPage: number) {
-    try{
-        const res = await this.apiService.fetch<ShopwareData>(
-            `/tenants/${tanent_id}/repair_orders?page=${currentPage}`,
-          );
-        console.log(currentPage)
-        await this.writeRepairOrder(res.results)
-    } catch(error) {
-        const res = await this.apiService.fetch<ShopwareData>(
-            `/tenants/${tanent_id}/repair_orders?page=${currentPage}`,
-          );
+  async fetchAndWriteEachPageRepairOrder(
+    tanent_id: number,
+    currentPage: number,
+  ) {
+    try {
+      const res = await this.apiService.fetch<ShopwareData>(
+        `/tenants/${tanent_id}/repair_orders?page=${currentPage}`,
+      );
+      console.log(currentPage);
+      await this.writeRepairOrder(res.results);
+    } catch (error) {
+      const res = await this.apiService.fetch<ShopwareData>(
+        `/tenants/${tanent_id}/repair_orders?page=${currentPage}`,
+      );
 
-    await this.writeRepairOrder(res.results)
+      await this.writeRepairOrder(res.results);
     }
   }
 
   async fetchAndWriteWholePageRepairOrder(tanent_id: number) {
     const res = await this.apiService.fetch<ShopwareData>(
-        `/tenants/${tanent_id}/repair_orders`,
-      );
+      `/tenants/${tanent_id}/repair_orders`,
+    );
     const totalPages = res.total_pages;
     const pageArray = new Array(totalPages).fill(1);
 
     await Promise.all(
-        pageArray.map((item, index) => 
-            this.fetchAndWriteEachPageRepairOrder(tanent_id, index)
-        )
-    )
+      pageArray.map((item, index) =>
+        this.fetchAndWriteEachPageRepairOrder(tanent_id, index),
+      ),
+    );
 
-    await console.log("success")
+    await console.log("success");
   }
 
   async writeRepairOrder(shopware_repairorders: ShopWareRepairOrder[]) {

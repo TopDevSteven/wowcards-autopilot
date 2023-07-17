@@ -25,27 +25,27 @@ import { AccuzipApiService } from "../accuzip/api.service";
 import { ListcleanupService } from "../listcleanup/listcleanup.service";
 
 type CSVContactObject = {
-  'storeId': string,
-  'Store Name': string,
-  'MONTH mix':  string,
-  'First': string | null,
-  'Last': string | null,
-  'Address Line 1': string | null,
-  'City': string | null,
-  'State': string | null,
-  'Zip': string | null,
-  'DPBC': string | null,
-  'CRRT': string | null,
-  'lastVisitDate': string | null,
-  'firstVisitDate': string | null,
-  'totalSales': string | null,
-  'totalVisits': string | null,
-  'averageRepairOrder': string | null,
-  'MDCOMPANY': string | null,
-  'MDDOB': string | null,
-  'Day cust': string | null,
-  'YEAR mix': string | null
-}
+  storeId: string;
+  "Store Name": string;
+  "MONTH mix": string;
+  First: string | null;
+  Last: string | null;
+  "Address Line 1": string | null;
+  City: string | null;
+  State: string | null;
+  Zip: string | null;
+  DPBC: string | null;
+  CRRT: string | null;
+  lastVisitDate: string | null;
+  firstVisitDate: string | null;
+  totalSales: string | null;
+  totalVisits: string | null;
+  averageRepairOrder: string | null;
+  MDCOMPANY: string | null;
+  MDDOB: string | null;
+  "Day cust": string | null;
+  "YEAR mix": string | null;
+};
 /**
  * Background jobs service
  */
@@ -75,7 +75,7 @@ export class JobsService {
     private readonly tekmetricSendEmailService: TekmetricSendEmailService,
     private readonly listcleanupService: ListcleanupService,
     private readonly protractorBdayService: ProtractorBdayService,
-    private readonly protractorContactService: ProtractorContactService
+    private readonly protractorContactService: ProtractorContactService,
   ) {
     this.runSyncJob = this.runSyncJob.bind(this);
     this.logException = this.logException.bind(this);
@@ -89,7 +89,6 @@ export class JobsService {
   TEKMETRICtestJob() {
     return this.runSyncJob("Test Job", async () => {
       this.logger.log(`TEKMETRICTest job is executing...`);
-
     });
   }
 
@@ -118,4 +117,3 @@ export class JobsService {
     }
   }
 }
-

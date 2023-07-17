@@ -17,7 +17,11 @@ export class ProtractorService {
     private readonly protractorinvoiceservice: ProtractorInvoiceService,
   ) {}
 
-  async fetchAndwriteEachDateProtractor(start_date: string, gap: number, shop_name: string) {
+  async fetchAndwriteEachDateProtractor(
+    start_date: string,
+    gap: number,
+    shop_name: string,
+  ) {
     let startDate = new Date(start_date);
     let endDate = new Date();
     const today = new Date();
@@ -37,7 +41,7 @@ export class ProtractorService {
       response.CRMDataSet.Contacts.Item
         ? response.CRMDataSet.Contacts.Item
         : null,
-      shop_name
+      shop_name,
     );
     await this.protractorinvoiceservice.writeProtractorInvoiesToDB(
       response.CRMDataSet.Invoices.Item
@@ -49,13 +53,15 @@ export class ProtractorService {
   async fetchAndwrtieProtractorToDB(gap: number, shop_name: string) {
     const dates = await this.generativeDateGroup();
     await Promise.all(
-      dates.map((date) => this.fetchAndwriteEachDateProtractor(date, gap, shop_name)),
+      dates.map((date) =>
+        this.fetchAndwriteEachDateProtractor(date, gap, shop_name),
+      ),
     );
     // console.log(response.CRMDataSet.Contacts.Item)
     // await this.protractorcontactservice.writeProtractorContactsToDB(response.CRMDataSet.Contacts.Item)
   }
 
-  async getProtractorReport(shop_name : string) {
+  async getProtractorReport(shop_name: string) {
     const res = await this.db.query(
       `
       SELECT DISTINCT c.id,
@@ -111,7 +117,7 @@ export class ProtractorService {
       WHERE DATE(lastVisit.invoicetime) >= DATE(NOW() - INTERVAL '4 YEARS 3 MONTHS')
       AND c.shopname='${shop_name}'
       GROUP BY c.id,firstVisit.invoicetime, lastVisit.invoicetime, b.b_year, b.b_month, b.b_day;
-      `
+      `,
     );
 
     return res.rows;

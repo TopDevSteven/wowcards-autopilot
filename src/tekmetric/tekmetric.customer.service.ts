@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Pool } from "pg";
 import { ConfigService } from "@nestjs/config";
 import { TekmetricApiService } from "./api.service";
-import * as fs from 'fs';
-import csv from 'csv-parser';
+import * as fs from "fs";
+import csv from "csv-parser";
 
 type TekmetricCustomer = {
   id: number;
@@ -36,20 +36,20 @@ type TekmetricCustomer = {
 };
 
 type CSVCustomerObject = {
-  '616': string,
-  'customerId': string,
-  'MONTH': string,
-  'First': string | null,
-  'Last': string | null,
-  'Address Line 1': string | null,
-  'Address Line 2': string | null,
-  'City': string | null,
-  'State': string | null,
-  'Zip': string | null,
-  'firstVisitDate': string | null,
-  'lastVisitDate': string | null,
-  'chain name': string | null
-}
+  "616": string;
+  customerId: string;
+  MONTH: string;
+  First: string | null;
+  Last: string | null;
+  "Address Line 1": string | null;
+  "Address Line 2": string | null;
+  City: string | null;
+  State: string | null;
+  Zip: string | null;
+  firstVisitDate: string | null;
+  lastVisitDate: string | null;
+  "chain name": string | null;
+};
 
 @Injectable()
 export class TekmetricCustomerService {
@@ -63,54 +63,39 @@ export class TekmetricCustomerService {
   async fetchCustomersFromCSV(filePath: string): Promise<CSVCustomerObject[]> {
     const results: any = [];
     return new Promise((resolve, reject) => {
-        fs.createReadStream(filePath)
-            .pipe(csv())
-            .on('data', (data) => results.push(data))
-            .on('end', () => {
-                resolve(results);
-            })
-            .on('error', (error) => {
-                reject(error);
-            });
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on("data", (data) => results.push(data))
+        .on("end", () => {
+          resolve(results);
+        })
+        .on("error", (error) => {
+          reject(error);
+        });
     });
   }
 
-  async writeCSVToDB (tekcustomers: CSVCustomerObject[]) {
+  async writeCSVToDB(tekcustomers: CSVCustomerObject[]) {
     const customers = tekcustomers.reduce(
       (result, customer) => ({
-        ids: [...result.ids, Number(customer['customerId'])],
-        firstNames: [...result.firstNames, customer['First']],
-        lastNames: [...result.lastNames, customer['Last']],
+        ids: [...result.ids, Number(customer["customerId"])],
+        firstNames: [...result.firstNames, customer["First"]],
+        lastNames: [...result.lastNames, customer["Last"]],
         emails: [...result.emails, ""],
-        addresses1: [...result.addresses1, customer['Address Line 1']],
-        addresses2: [...result.addresses2, customer['Address Line 2']],
-        addresses_cities: [...result.addresses_cities, customer['City']],
-        addresses_states: [...result.addresses_states, customer['State']],
-        addresses_zips: [...result.addresses_zips, customer['Zip']],
+        addresses1: [...result.addresses1, customer["Address Line 1"]],
+        addresses2: [...result.addresses2, customer["Address Line 2"]],
+        addresses_cities: [...result.addresses_cities, customer["City"]],
+        addresses_states: [...result.addresses_states, customer["State"]],
+        addresses_zips: [...result.addresses_zips, customer["Zip"]],
         phone1s: [...result.phone1s, ""],
         phone2s: [...result.phone2s, ""],
         phone3s: [...result.phone3s, ""],
         note: [...result.note, ""],
-        customerTypes_ids: [
-          ...result.customerTypes_ids,
-          0
-        ],
-        customerTypes_codes: [
-          ...result.customerTypes_codes,
-          null
-        ],
-        customerTypes_names: [
-          ...result.customerTypes_names,
-          null
-        ],
-        contactFirstNames: [
-          ...result.contactFirstNames,
-          null
-        ],
-        contactLastNames: [
-          ...result.contactLastNames,
-          null
-        ],
+        customerTypes_ids: [...result.customerTypes_ids, 0],
+        customerTypes_codes: [...result.customerTypes_codes, null],
+        customerTypes_names: [...result.customerTypes_names, null],
+        contactFirstNames: [...result.contactFirstNames, null],
+        contactLastNames: [...result.contactLastNames, null],
         shopIds: [...result.shopIds, 0],
         okForMarketings: [...result.okForMarketings, null],
         createdDates: [...result.createdDates, null],
@@ -432,7 +417,7 @@ export class TekmetricCustomerService {
       `/customers?page=${index}&size=300&shop=${shop_id}`,
     );
 
-    console.log(result)
+    console.log(result);
 
     result.flat().map(function (element) {
       if (element.address == null) {
@@ -459,11 +444,11 @@ export class TekmetricCustomerService {
     await this.writeCustomersToDB(result);
   }
 
-  async writeCustomerEachPageData(index: number, shop_id: number){
-    try{
-      await this.writeCustomerPageData(index, shop_id)
-    }catch(error) {
-      await this.writeCustomerPageData(index, shop_id)
+  async writeCustomerEachPageData(index: number, shop_id: number) {
+    try {
+      await this.writeCustomerPageData(index, shop_id);
+    } catch (error) {
+      await this.writeCustomerPageData(index, shop_id);
     }
   }
 

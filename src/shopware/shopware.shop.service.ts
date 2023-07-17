@@ -52,7 +52,7 @@ export class ShopwareShopService {
   }
 
   async writeShopsToDB(tanent_id: number) {
-    const shopwareShops: ShopWareShop[] = await this.fetchShopData(tanent_id)
+    const shopwareShops: ShopWareShop[] = await this.fetchShopData(tanent_id);
     const shops = shopwareShops.reduce(
       (result, shop) => ({
         shopwareids: [...result.shopwareids, shop.id],

@@ -16,7 +16,7 @@ import { ListcleanupModule } from "../listcleanup/listcleanup.module";
     ScheduleModule.forRoot(),
     GooglesheetModule,
     AccuzipModule,
-    ListcleanupModule
+    ListcleanupModule,
   ],
   providers: [JobsService],
 })

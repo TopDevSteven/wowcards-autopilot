@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Pool } from "pg";
-import * as fs from 'fs';
-import csv from 'csv-parser';
+import * as fs from "fs";
+import csv from "csv-parser";
 
 type ProtractorContact = {
   Header: {
@@ -50,28 +50,27 @@ type ProtractorContact = {
 };
 
 type CSVContactObject = {
-  'storeId': string,
-  'Store Name': string,
-  'MONTH mix':  string,
-  'First': string | null,
-  'Last': string | null,
-  'Address Line 1': string | null,
-  'City': string | null,
-  'State': string | null,
-  'Zip': string | null,
-  'DPBC': string | null,
-  'CRRT': string | null,
-  'lastVisitDate': string | null,
-  'firstVisitDate': string | null,
-  'totalSales': string | null,
-  'totalVisits': string | null,
-  'averageRepairOrder': string | null,
-  'MDCOMPANY': string | null,
-  'MDDOB': string | null,
-  'Day cust': string | null,
-  'YEAR mix': string | null
-}
-
+  storeId: string;
+  "Store Name": string;
+  "MONTH mix": string;
+  First: string | null;
+  Last: string | null;
+  "Address Line 1": string | null;
+  City: string | null;
+  State: string | null;
+  Zip: string | null;
+  DPBC: string | null;
+  CRRT: string | null;
+  lastVisitDate: string | null;
+  firstVisitDate: string | null;
+  totalSales: string | null;
+  totalVisits: string | null;
+  averageRepairOrder: string | null;
+  MDCOMPANY: string | null;
+  MDDOB: string | null;
+  "Day cust": string | null;
+  "YEAR mix": string | null;
+};
 
 @Injectable()
 export class ProtractorContactService {
@@ -80,52 +79,43 @@ export class ProtractorContactService {
   async fetchContactsFromCSV(filePath: string): Promise<CSVContactObject[]> {
     const results: any = [];
     return new Promise((resolve, reject) => {
-        fs.createReadStream(filePath)
-            .pipe(csv())
-            .on('data', (data) => results.push(data))
-            .on('end', () => {
-                resolve(results);
-            })
-            .on('error', (error) => {
-                reject(error);
-            });
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on("data", (data) => results.push(data))
+        .on("end", () => {
+          resolve(results);
+        })
+        .on("error", (error) => {
+          reject(error);
+        });
     });
   }
 
   async writeCSVToDB(Contact: CSVContactObject[]) {
     const contacts = Contact.reduce(
       (result, contact) => ({
-        ids: [...result.ids, contact['storeId']],
+        ids: [...result.ids, contact["storeId"]],
         creationTimes: [...result.creationTimes, null],
         deletionTimes: [...result.deletionTimes, null],
-        lastModifiedTimes: [
-          ...result.lastModifiedTimes,
-          null
-        ],
+        lastModifiedTimes: [...result.lastModifiedTimes, null],
         fileAses: [...result.fileAses, null],
         nameTitles: [...result.nameTitles, null],
         namePrefixes: [...result.namePrefixes, null],
-        firstNames: [...result.firstNames, contact['First']],
+        firstNames: [...result.firstNames, contact["First"]],
         middleNames: [...result.middleNames, null],
-        lastNames: [...result.lastNames, contact['Last']],
-        shopnames: [...result.shopnames, contact['Store Name']],
+        lastNames: [...result.lastNames, contact["Last"]],
+        shopnames: [...result.shopnames, contact["Store Name"]],
         suffixes: [...result.suffixes, null],
         addresstitles: [...result.addresstitles, null],
-        addressstreets: [...result.addressstreets, contact['Address Line 1']],
-        addresscities: [...result.addresscities, contact['City']],
-        addressprovinces: [
-          ...result.addressprovinces,
-          contact['State'],
-        ],
-        addresspostalcodes: [
-          ...result.addresspostalcodes,
-          contact['Zip']
-        ],
+        addressstreets: [...result.addressstreets, contact["Address Line 1"]],
+        addresscities: [...result.addresscities, contact["City"]],
+        addressprovinces: [...result.addressprovinces, contact["State"]],
+        addresspostalcodes: [...result.addresspostalcodes, contact["Zip"]],
         addresscountries: [...result.addresscountries, null],
         companies: [...result.companies, null],
         phone1Titles: [...result.phone1Titles, null],
-        phone1s: [...result.phone1s,null],
-        phone2Titles: [...result.phone2Titles,null],
+        phone1s: [...result.phone1s, null],
+        phone2Titles: [...result.phone2Titles, null],
         phone2s: [...result.phone2s, null],
         emailTitles: [...result.emailTitles, null],
         emails: [...result.emails, null],

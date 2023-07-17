@@ -14,7 +14,7 @@ import { GooglesheetService } from "./googlesheet/googlesheet.service";
 import { GooglesheetModule } from "./googlesheet/googlesheet.module";
 import { AccuzipModule } from "./accuzip/accuzip.module";
 import { CallbackModule } from "./callback/callback.module";
-import { ListcleanupModule } from './listcleanup/listcleanup.module';
+import { ListcleanupModule } from "./listcleanup/listcleanup.module";
 
 @Module({
   imports: [
